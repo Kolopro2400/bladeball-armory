@@ -1,0 +1,12 @@
+[build]
+  publish = "."
+  command = "echo 'No build step needed — static HTML + functions'"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200

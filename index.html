@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Armory Ledger — Blade Ball Sword Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0c10; --bg-elev:#101218; --panel:#171a21; --panel-line:#272b35;
+    --ember:#ff6b35; --ember-soft:rgba(255,107,53,.16);
+    --text:#eef1f5; --text-muted:#8b93a1;
+    --common:#9aa1ad; --uncommon:#49c97c; --rare:#4ea8ff; --epic:#b46bff;
+    --legendary:#ffb84c; --mythical:#ff5c7a; --mystery:#ffffff;
+    --gold:#e8c34a; --gold-soft:rgba(232,195,74,.16);
+    --up:#3ecf6e; --down:#ff5c5c;
+    --token:#f4c430; --crystal:#a855f7;
+  }
+  *{box-sizing:border-box;}
+  *:focus-visible{outline:2px solid var(--ember); outline-offset:2px;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:'IBM Plex Sans', sans-serif;}
+  .mono{font-family:'JetBrains Mono', monospace;}
+  .display{font-family:'Rajdhani', sans-serif;}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:20; background:var(--bg-elev);
+    border-bottom:1px solid var(--panel-line); padding:10px 20px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand-mark{
+    width:34px; height:34px; border-radius:7px;
+    background:linear-gradient(145deg, var(--ember), #c43e10);
+    display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;
+  }
+  .brand-text .eyebrow{font-family:'JetBrains Mono', monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted);}
+  .brand-text .title{font-family:'Rajdhani', sans-serif; font-weight:700; font-size:19px; line-height:1.1;}
+  .tabs{display:flex; gap:8px; align-items:center;}
+  .tab-btn{
+    font-family:'Rajdhani', sans-serif; font-weight:600; font-size:14px; letter-spacing:.03em; text-transform:uppercase;
+    background:transparent; color:var(--text-muted); border:1px solid var(--panel-line); border-radius:6px;
+    padding:8px 16px; cursor:pointer; transition:.15s;
+  }
+  .tab-btn:hover{color:var(--text); border-color:#3a3f4c;}
+  .tab-btn.is-active{background:var(--ember-soft); color:var(--ember); border-color:var(--ember);}
+  .dev-btn{
+    width:36px; height:36px; padding:0; border-radius:6px; background:transparent;
+    border:1px solid var(--panel-line); color:var(--text-muted); cursor:pointer; font-size:15px; transition:.15s; flex:none;
+  }
+  .dev-btn:hover{color:var(--text); border-color:#3a3f4c;}
+  .dev-btn.is-unlocked{color:var(--up); border-color:var(--up);}
+  .user-chip{
+    display:flex; align-items:center; gap:6px; font-family:'JetBrains Mono', monospace; font-size:12px;
+    color:var(--text-muted); padding:6px 10px; border:1px solid var(--panel-line); border-radius:6px; cursor:pointer;
+  }
+  .user-chip:hover{color:var(--text); border-color:#3a3f4c;}
+
+  /* ---------- pages ---------- */
+  .page{display:none; max-width:1180px; margin:0 auto; padding:24px 20px 60px;}
+  .page.active-page{display:block; animation:fadeIn .35s ease;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  .page-head{margin-bottom:18px;}
+  .page-head .eyebrow{font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ember); margin:0 0 6px;}
+  .page-head h1{font-family:'Rajdhani', sans-serif; font-weight:700; font-size:30px; margin:0 0 6px;}
+  .page-head p{margin:0; color:var(--text-muted); font-size:14px;}
+
+  /* ---------- loading / error states ---------- */
+  .loading-block{display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; color:var(--text-muted); gap:12px;}
+  .spinner{
+    width:28px; height:28px; border-radius:50%; border:3px solid var(--panel-line); border-top-color:var(--ember);
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .error-banner{
+    background:rgba(255,92,92,.12); border:1px solid var(--down); color:var(--down);
+    border-radius:8px; padding:12px 16px; font-size:13px; margin-bottom:16px;
+  }
+
+  /* ---------- auth gate ---------- */
+  .auth-overlay{
+    position:fixed; inset:0; background:var(--bg); z-index:100;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .auth-card{width:100%; max-width:360px; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; padding:30px 26px;}
+  .auth-card .brand-mark{margin:0 auto 14px;}
+  .auth-card h1{font-family:'Rajdhani', sans-serif; font-weight:700; font-size:22px; text-align:center; margin:0 0 4px;}
+  .auth-card p.sub{text-align:center; color:var(--text-muted); font-size:13px; margin:0 0 22px;}
+  .auth-tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:1px solid var(--panel-line);}
+  .auth-tab-btn{
+    flex:1; background:none; border:none; color:var(--text-muted); font-family:'Rajdhani', sans-serif;
+    font-weight:600; font-size:14px; text-transform:uppercase; padding:8px; cursor:pointer;
+    border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .auth-tab-btn.active{color:var(--ember); border-bottom-color:var(--ember);}
+  .auth-field{margin-bottom:14px;}
+  .auth-field label{display:block; font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;}
+  .auth-field input{
+    width:100%; padding:11px 12px; border-radius:7px; border:1px solid var(--panel-line);
+    background:var(--bg-elev); color:var(--text); font-size:14px;
+  }
+  .auth-field input:focus{border-color:var(--ember);}
+  .auth-error{color:var(--down); font-size:12.5px; min-height:16px; margin:-4px 0 12px;}
+  .auth-submit{width:100%; margin-top:4px;}
+
+  /* ---------- stats strip ---------- */
+  .stats-strip{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:1px;
+    background:var(--panel-line); border:1px solid var(--panel-line); border-radius:10px; overflow:hidden; margin:18px 0;
+  }
+  .stat{background:var(--panel); padding:14px 16px;}
+  .stat .stat-label{font-family:'JetBrains Mono', monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;}
+  .stat .stat-value{font-family:'Rajdhani', sans-serif; font-weight:700; font-size:24px;}
+
+  .disclaimer{font-size:12px; color:var(--text-muted); font-style:italic; margin:0 0 14px;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; margin:0 0 18px;}
+  .legend-item{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted);}
+  .legend-dot{width:9px; height:9px; border-radius:50%; background:var(--dot-color);}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;}
+  .search-wrap{flex:1 1 240px; position:relative;}
+  .search-wrap input{
+    width:100%; padding:10px 12px 10px 34px; border-radius:7px; border:1px solid var(--panel-line);
+    background:var(--panel); color:var(--text); font-size:14px;
+  }
+  .search-wrap input:focus{border-color:var(--ember);}
+  .search-wrap .icon{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:14px; pointer-events:none;}
+  select#sortSelect{padding:10px 12px; border-radius:7px; border:1px solid var(--panel-line); background:var(--panel); color:var(--text); font-size:13px; cursor:pointer;}
+  .results-count{font-size:12px; color:var(--text-muted); margin:-6px 0 14px; font-family:'JetBrains Mono', monospace;}
+
+  .blade-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(165px,1fr)); gap:16px;}
+  .blade-card{
+    background:var(--panel); border:1px solid var(--panel-line); border-top:3px solid var(--chip-color, var(--panel-line));
+    border-radius:9px; padding:14px; text-align:center; cursor:pointer; transition:transform .15s, box-shadow .15s; position:relative;
+  }
+  .blade-card:hover, .blade-card:focus-visible{transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.35);}
+  .blade-card.tier-event{
+    border:2px solid transparent;
+    background-image:linear-gradient(var(--panel), var(--panel)), linear-gradient(120deg, #ff6b35, #ffd56b, #5dd6ff, #b46bff, #ff5c7a, #ff6b35);
+    background-origin:border-box; background-clip:padding-box, border-box; background-size:100% 100%, 320% 320%;
+    animation:foilShift 7s linear infinite;
+  }
+  .blade-card.tier-mystery{
+    border:2px solid transparent;
+    background-image:linear-gradient(#0a0a0d, #0a0a0d), linear-gradient(120deg, #ffffff, #5dd6ff, #b46bff, #ff5c7a, #ffd56b, #ffffff);
+    background-origin:border-box; background-clip:padding-box, border-box; background-size:100% 100%, 280% 280%;
+    animation:foilShift 3.2s linear infinite; box-shadow:0 0 18px rgba(255,255,255,.12);
+  }
+  .blade-card.is-value-item{box-shadow:0 0 0 1px var(--gold), 0 10px 24px rgba(232,195,74,.15);}
+  @keyframes foilShift{to{background-position:0 0, 320% 0;}}
+  @media (prefers-reduced-motion: reduce){ .blade-card.tier-event, .blade-card.tier-mystery{animation:none;} }
+
+  .blade-img-wrap{width:100%; aspect-ratio:1/1; background:var(--bg-elev); border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; overflow:hidden;}
+  .blade-img-wrap img{width:78%; height:78%; object-fit:contain;}
+  .blade-name{font-size:13.5px; font-weight:500; line-height:1.3;}
+
+  .chip-row{display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:8px;}
+  .tier-chip{
+    display:inline-block; padding:3px 10px; border-radius:999px; font-family:'JetBrains Mono', monospace;
+    font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--chip-color); border:1px solid var(--chip-color);
+    background:color-mix(in srgb, var(--chip-color) 16%, transparent);
+  }
+  .value-chip{
+    display:inline-block; padding:3px 10px; border-radius:999px; font-family:'JetBrains Mono', monospace;
+    font-size:10.5px; color:var(--gold); border:1px solid var(--gold); background:color-mix(in srgb, var(--gold) 16%, transparent);
+  }
+  .value-item-chip{
+    display:inline-block; padding:3px 10px; border-radius:999px; font-family:'JetBrains Mono', monospace;
+    font-size:10.5px; color:#0a0a0d; background:var(--gold); font-weight:700;
+  }
+  .trend-chip{display:inline-block; padding:3px 10px; border-radius:999px; font-family:'JetBrains Mono', monospace; font-size:10.5px;}
+  .trend-chip.up{color:var(--up); border:1px solid var(--up); background:rgba(62,207,110,.14);}
+  .trend-chip.down{color:var(--down); border:1px solid var(--down); background:rgba(255,92,92,.14);}
+  .trend-chip.flat{color:var(--text-muted); border:1px solid var(--panel-line); background:transparent;}
+
+  /* ---------- modal / ticket ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(5,6,9,.78); display:flex; align-items:center; justify-content:center;
+    opacity:0; visibility:hidden; transition:opacity .2s; z-index:50; padding:20px; backdrop-filter:blur(3px); overflow-y:auto;
+  }
+  .modal-overlay.open{opacity:1; visibility:visible;}
+  .ticket{
+    width:100%; max-width:340px; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px;
+    padding:26px; position:relative; text-align:center; transform:scale(.95); transition:transform .2s; margin:auto;
+  }
+  .ticket.ticket-wide{max-width:600px; text-align:left;}
+  .modal-overlay.open .ticket{transform:scale(1);}
+  .ticket-close{position:absolute; top:12px; right:14px; background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; line-height:1;}
+  .ticket-close:hover{color:var(--text);}
+  .ticket .blade-img-wrap{width:140px; height:140px; margin:0 auto 14px;}
+  .ticket .blade-img-wrap img{width:80%; height:80%;}
+  .ticket-wide .ticket-head{display:flex; gap:16px; align-items:center;}
+  .ticket-wide .blade-img-wrap{width:84px; height:84px; margin:0; flex:none;}
+  .ticket-wide .ticket-head-text{flex:1; min-width:0;}
+  .ticket h2{font-family:'Rajdhani', sans-serif; font-weight:700; font-size:20px; margin:0 0 8px;}
+  .ticket .ticket-divider{height:1px; background:var(--panel-line); margin:16px 0;}
+  .ticket-stats{display:flex; gap:10px; justify-content:center;}
+  .ticket-wide .ticket-stats{justify-content:flex-start; gap:26px;}
+  .ticket-stat{flex:1; min-width:0;}
+  .ticket-wide .ticket-stat{flex:none;}
+  .ticket .stock-label{font-family:'JetBrains Mono', monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;}
+  .ticket .stock-value{font-family:'JetBrains Mono', monospace; font-weight:700; font-size:27px; color:var(--ember); line-height:1.15; word-break:break-word;}
+  .ticket .value-value{color:var(--gold);}
+  .ticket .stock-note{font-size:11px; color:var(--text-muted); margin-top:4px;}
+  .ticket .grind-note{margin-top:16px; padding-top:14px; border-top:1px dashed var(--panel-line); font-size:12px; color:var(--text-muted);}
+
+  .chart-block{margin-top:18px;}
+  .chart-tabs{display:flex; gap:6px; margin-bottom:10px; border-bottom:1px solid var(--panel-line);}
+  .chart-tab-btn{
+    background:none; border:none; color:var(--text-muted); font-family:'Rajdhani', sans-serif; font-weight:600;
+    font-size:13.5px; letter-spacing:.02em; text-transform:uppercase; padding:8px 4px 10px; cursor:pointer;
+    border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .chart-tab-btn:hover{color:var(--text);}
+  .chart-tab-btn.active{color:var(--ember); border-bottom-color:var(--ember);}
+  .chart-controls{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+  select#rangeSelect{padding:6px 10px; border-radius:6px; border:1px solid var(--panel-line); background:var(--bg-elev); color:var(--text); font-size:12px; font-family:'JetBrains Mono', monospace; cursor:pointer;}
+  .chart-range{display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-muted);}
+  .chart-range .arrow{color:#555;}
+  .chart-wrap{position:relative; background:var(--bg-elev); border:1px solid var(--panel-line); border-radius:8px; padding:8px 6px 4px;}
+  .chart-wrap svg{display:block; width:100%; height:auto; cursor:crosshair;}
+  .chart-tooltip{
+    position:absolute; pointer-events:none; background:#0a0c10; border:1px solid var(--panel-line); border-radius:7px;
+    padding:8px 12px; font-size:12px; line-height:1.7; white-space:nowrap; box-shadow:0 8px 20px rgba(0,0,0,.5); opacity:0; transition:opacity .1s; z-index:5;
+  }
+  .chart-tooltip .tt-date{color:#fff; font-weight:600; margin-bottom:3px; display:block;}
+  .chart-tooltip .tt-dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px;}
+  .chart-legend{display:flex; gap:16px; margin-top:8px; font-size:11px; color:var(--text-muted); flex-wrap:wrap;}
+  .chart-legend span{display:flex; align-items:center; gap:6px;}
+  .chart-legend .dot{width:8px; height:8px; border-radius:50%;}
+
+  .detail-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(112px,1fr)); gap:8px; margin-top:14px;}
+  .detail-tile{background:var(--bg-elev); border:1px solid var(--panel-line); border-radius:7px; padding:9px 10px;}
+  .detail-tile .dt-label{font-family:'JetBrains Mono', monospace; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;}
+  .detail-tile .dt-value{font-family:'Rajdhani', sans-serif; font-weight:700; font-size:17px;}
+  .delete-note{font-size:11.5px; color:var(--text-muted); font-style:italic; margin-top:10px; line-height:1.5;}
+
+  /* ---------- currency icons ---------- */
+  .cur-icon{width:1em; height:1em; display:inline-block; vertical-align:-0.15em;}
+  .cur-inline{display:inline-flex; align-items:center; gap:4px;}
+
+  /* ---------- inventory tab ---------- */
+  .currency-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:14px; margin-bottom:18px;}
+  .currency-panel{
+    background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px; text-align:center;
+  }
+  .currency-panel .cp-label{font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:6px;}
+  .currency-panel .cp-value{font-family:'Rajdhani', sans-serif; font-weight:700; font-size:32px;}
+  .currency-panel.cash .cp-value{color:var(--ember);}
+  .currency-panel.token .cp-value{color:var(--token);}
+  .currency-panel.crystal .cp-value{color:var(--crystal);}
+  .currency-editor{margin-top:14px; padding-top:14px; border-top:1px solid var(--panel-line); display:flex; flex-direction:column; gap:8px; align-items:center;}
+  .currency-editor .cur-row{display:flex; gap:6px; justify-content:center; flex-wrap:wrap;}
+  .currency-editor input{
+    padding:8px 10px; font-size:13px; border-radius:6px; border:1px solid var(--panel-line);
+    background:var(--bg-elev); color:var(--text); width:110px;
+  }
+  .btn{
+    background:var(--ember); color:#1a0d05; border:none; border-radius:7px; padding:9px 14px;
+    font-family:'Rajdhani', sans-serif; font-weight:700; font-size:13px; letter-spacing:.02em; text-transform:uppercase; cursor:pointer; transition:filter .15s;
+  }
+  .btn:hover{filter:brightness(1.1);}
+  .btn.btn-sm{padding:8px 12px; font-size:12px;}
+  .btn.btn-up{background:var(--up); color:#06210f;}
+  .btn.btn-down{background:var(--down); color:#2a0606;}
+  .btn.btn-ghost{background:transparent; border:1px solid var(--panel-line); color:var(--text);}
+
+  .ledger-panel{background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:22px; margin-bottom:18px;}
+  .ledger-panel .ledger-label{font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px;}
+  .owned-item-row{
+    display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--panel-line);
+  }
+  .owned-item-row:last-child{border-bottom:none;}
+  .owned-item-row .oi-img{width:42px; height:42px; border-radius:6px; background:var(--bg-elev); flex:none; display:flex; align-items:center; justify-content:center; overflow:hidden;}
+  .owned-item-row .oi-img img{width:80%; height:80%; object-fit:contain;}
+  .owned-item-row .oi-info{flex:1; min-width:0;}
+  .owned-item-row .oi-name{font-size:13.5px; font-weight:500;}
+  .owned-item-row .oi-qty{font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--gold);}
+  .empty-note{color:var(--text-muted); font-size:13px; text-align:center; padding:20px 0;}
+
+  /* ---------- developer console ---------- */
+  .dev-locked{max-width:380px; margin:60px auto; text-align:center; background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:32px 26px;}
+  .dev-locked .lock-icon{font-size:30px; margin-bottom:10px;}
+  .dev-locked input{
+    width:100%; text-align:center; letter-spacing:.3em; font-family:'JetBrains Mono', monospace; font-size:18px;
+    padding:12px; border-radius:7px; border:1px solid var(--panel-line); background:var(--bg-elev); color:var(--text); margin:14px 0;
+  }
+  .dev-locked .dev-error{color:var(--down); font-size:12px; min-height:16px; margin-bottom:6px;}
+  .dev-panel{display:grid; gap:18px;}
+  .dev-card{background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:20px;}
+  .dev-card h3{font-family:'Rajdhani', sans-serif; font-weight:700; font-size:17px; margin:0 0 4px; display:flex; align-items:center; gap:8px;}
+  .dev-card .dev-sub{font-size:12px; color:var(--text-muted); margin:0 0 14px;}
+  .form-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;}
+  .form-field label{display:block; font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); margin-bottom:5px;}
+  .form-field input, .form-field select{
+    width:100%; padding:9px 10px; border-radius:6px; border:1px solid var(--panel-line); background:var(--bg-elev); color:var(--text); font-size:13.5px;
+  }
+  .form-field input[type=file]{padding:7px 8px; font-size:12px;}
+  .toggle-group{display:flex; gap:8px; flex-wrap:wrap;}
+  .toggle-btn{padding:8px 14px; border-radius:6px; border:1px solid var(--panel-line); background:var(--bg-elev); color:var(--text-muted); font-size:12.5px; cursor:pointer; transition:.15s;}
+  .toggle-btn.selected{border-color:var(--ember); color:var(--ember); background:var(--ember-soft);}
+  .checkbox-row{display:flex; align-items:center; gap:8px; margin-top:14px;}
+  .checkbox-row input[type=checkbox]{width:18px; height:18px;}
+  .checkbox-row label{font-size:13px; color:var(--text);}
+  .dev-actions{display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;}
+  .dev-status{font-size:12px; color:var(--up); min-height:16px; margin-top:8px;}
+  .img-preview{width:64px; height:64px; border-radius:6px; background:var(--bg-elev); border:1px dashed var(--panel-line); display:flex; align-items:center; justify-content:center; overflow:hidden; margin-top:8px;}
+  .img-preview img{width:100%; height:100%; object-fit:contain;}
+  .field-hint{font-size:11px; color:var(--text-muted); margin-top:5px;}
+</style>
+</head>
+<body>
+
+  <!-- ===================== AUTH GATE ===================== -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-card">
+      <div class="brand-mark">⚔️</div>
+      <h1>Armory Ledger</h1>
+      <p class="sub">Sign in to track your inventory and the live market.</p>
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab-btn active" data-tab="login" onclick="switchAuthTab('login')">Sign In</button>
+        <button type="button" class="auth-tab-btn" data-tab="signup" onclick="switchAuthTab('signup')">Create Account</button>
+      </div>
+      <div class="auth-field">
+        <label>Username</label>
+        <input type="text" id="authUsername" autocomplete="username" placeholder="3-24 characters, a-z 0-9 _">
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="authPassword" autocomplete="current-password" placeholder="At least 4 characters">
+      </div>
+      <div class="auth-error" id="authError"></div>
+      <button class="btn auth-submit" id="authSubmitBtn" onclick="submitAuth()">Sign In</button>
+    </div>
+  </div>
+
+  <!-- ===================== MAIN APP ===================== -->
+  <div id="appRoot" style="display:none;">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">⚔️</div>
+        <div class="brand-text">
+          <div class="eyebrow">Blade Ball · Armory Ledger</div>
+          <div class="title">Secondary Sword Index</div>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn is-active" id="tabBtnIndex" onclick="switchTab('indexTab')">Index</button>
+        <button class="tab-btn" id="tabBtnInventory" onclick="switchTab('inventoryTab')">Inventory</button>
+        <button class="dev-btn" id="devBtn" onclick="switchTab('devTab')" title="Developer mode">🔧</button>
+        <button class="user-chip" id="userChip" onclick="handleLogout()" title="Tap to sign out"></button>
+      </div>
+    </div>
+
+    <div id="indexTab" class="page active-page">
+      <div class="page-head">
+        <p class="eyebrow">Live market · updates for every visitor</p>
+        <h1>Every blade, every value, tracked live.</h1>
+        <p>Prices move on their own between visits — the longer it's been since anyone checked a blade, the more its price may have drifted.</p>
+      </div>
+
+      <div id="indexLoading" class="loading-block"><div class="spinner"></div><span>Loading the market…</span></div>
+      <div id="indexError" class="error-banner" style="display:none;"></div>
+
+      <div id="indexContent" style="display:none;">
+        <div class="stats-strip">
+          <div class="stat"><div class="stat-label">Blades catalogued</div><div class="stat-value mono" id="statBlades">0</div></div>
+          <div class="stat"><div class="stat-label">Total stock in circulation</div><div class="stat-value mono" id="statStock">0</div></div>
+          <div class="stat"><div class="stat-label">Limited + ??? entries</div><div class="stat-value mono" id="statLimited">0</div></div>
+          <div class="stat"><div class="stat-label">Total catalog RAP</div><div class="stat-value mono" id="statValue" style="color:var(--gold)">0</div></div>
+        </div>
+
+        <p class="disclaimer">Stock, value, and RAP are simulated by a shared server-side market — every visitor sees the same live numbers.</p>
+
+        <div class="legend" id="legendRow"></div>
+
+        <div class="controls">
+          <div class="search-wrap"><span class="icon">🔍</span><input type="text" id="searchInput" placeholder="Search the ledger…"></div>
+          <select id="sortSelect">
+            <option value="name-asc">Name (A–Z)</option>
+            <option value="name-desc">Name (Z–A)</option>
+            <option value="stock-asc">Stock (Low → High)</option>
+            <option value="stock-desc">Stock (High → Low)</option>
+            <option value="value-asc">RAP (Low → High)</option>
+            <option value="value-desc">RAP (High → Low)</option>
+            <option value="rarity">Rarity (Rarest First)</option>
+          </select>
+        </div>
+        <div class="results-count" id="resultsCount"></div>
+        <div class="blade-grid" id="bladeContainer"></div>
+      </div>
+    </div>
+
+    <div id="inventoryTab" class="page">
+      <div class="page-head">
+        <p class="eyebrow">Your holdings</p>
+        <h1>Inventory</h1>
+        <p>Tied to your account — sign in from any device to see the same balances.</p>
+      </div>
+
+      <div id="inventoryLoading" class="loading-block"><div class="spinner"></div><span>Loading your inventory…</span></div>
+      <div id="inventoryError" class="error-banner" style="display:none;"></div>
+
+      <div id="inventoryContent" style="display:none;">
+        <div class="currency-grid">
+          <div class="currency-panel cash">
+            <div class="cp-label">💵 Cash</div>
+            <div class="cp-value mono" id="cashDisplay">$0</div>
+            <div class="currency-editor">
+              <div class="cur-row"><input type="number" id="cashSetInput" placeholder="Set exact…"><button class="btn btn-sm" onclick="setCurrency('cash')">Set</button></div>
+              <div class="cur-row">
+                <input type="number" id="cashAdjInput" placeholder="Amount…" min="0">
+                <button class="btn btn-sm btn-up" onclick="adjustCurrency('cash','add')">+</button>
+                <button class="btn btn-sm btn-down" onclick="adjustCurrency('cash','subtract')">−</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="currency-panel token">
+            <div class="cp-label" id="tokenLabelSlot">Token</div>
+            <div class="cp-value mono" id="tokenDisplay">0</div>
+            <div class="currency-editor">
+              <div class="cur-row"><input type="number" id="tokenSetInput" placeholder="Set exact…"><button class="btn btn-sm" onclick="setCurrency('token')">Set</button></div>
+              <div class="cur-row">
+                <input type="number" id="tokenAdjInput" placeholder="Amount…" min="0">
+                <button class="btn btn-sm btn-up" onclick="adjustCurrency('token','add')">+</button>
+                <button class="btn btn-sm btn-down" onclick="adjustCurrency('token','subtract')">−</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="currency-panel crystal">
+            <div class="cp-label" id="crystalLabelSlot">Crystal</div>
+            <div class="cp-value mono" id="crystalDisplay">0</div>
+            <div class="currency-editor">
+              <div class="cur-row"><input type="number" id="crystalSetInput" placeholder="Set exact…"><button class="btn btn-sm" onclick="setCurrency('crystal')">Set</button></div>
+              <div class="cur-row">
+                <input type="number" id="crystalAdjInput" placeholder="Amount…" min="0">
+                <button class="btn btn-sm btn-up" onclick="adjustCurrency('crystal','add')">+</button>
+                <button class="btn btn-sm btn-down" onclick="adjustCurrency('crystal','subtract')">−</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ledger-panel">
+          <div class="ledger-label">🎒 Owned blades</div>
+          <div id="ownedItemsList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="devTab" class="page">
+      <div id="devLockedView" class="dev-locked">
+        <div class="lock-icon">🔒</div>
+        <h2 style="margin:0 0 4px; font-family:'Rajdhani',sans-serif;">Developer Mode</h2>
+        <p style="color:var(--text-muted); font-size:13px; margin:0;">Enter the 4-character access code to unlock editing.</p>
+        <input type="password" id="devPasswordInput" maxlength="4" placeholder="••••" autocomplete="off">
+        <div class="dev-error" id="devError"></div>
+        <button class="btn" onclick="tryDevUnlock()">Unlock</button>
+      </div>
+
+      <div id="devConsoleView" class="dev-panel" style="display:none;">
+        <div class="page-head">
+          <p class="eyebrow">Unlocked</p>
+          <h1>Developer Console</h1>
+          <p>Changes write straight to the shared server market — every visitor sees them.</p>
+        </div>
+
+        <div class="dev-card">
+          <h3>💰 Your balance</h3>
+          <p class="dev-sub">Adjusts your own signed-in account's balance, same as the Inventory tab.</p>
+          <div class="form-grid">
+            <div class="form-field"><label>Currency</label>
+              <select id="devWalletCurrency"><option value="cash">Cash</option><option value="token">Token</option><option value="crystal">Crystal</option></select>
+            </div>
+            <div class="form-field"><label>Amount</label><input type="number" id="devWalletAmount" placeholder="e.g. 250000"></div>
+          </div>
+          <div class="dev-actions">
+            <button class="btn btn-up" onclick="adjustCurrency(document.getElementById('devWalletCurrency').value, 'add', 'devWalletAmount')">+ Add</button>
+            <button class="btn btn-down" onclick="adjustCurrency(document.getElementById('devWalletCurrency').value, 'subtract', 'devWalletAmount')">− Subtract</button>
+          </div>
+        </div>
+
+        <div class="dev-card">
+          <h3>📈 Edit an existing blade</h3>
+          <p class="dev-sub">Pick a blade, then change its tier, image, value, ownership stats, or set a custom price trend.</p>
+          <div class="form-grid">
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Blade</label>
+              <select id="devEditSelect" onchange="loadDevEditItem(this.value)"><option value="">— select a blade —</option></select>
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Image URL — paste the link then tap Apply</label>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="url" id="devEditImageUrl" placeholder="https://…">
+                <button type="button" class="btn" style="white-space:nowrap; padding:9px 14px;" onclick="applyDevEditImageUrl()">Apply</button>
+              </div>
+              <div class="img-preview" id="devEditImagePreview" style="margin-top:8px;">No image</div>
+            </div>
+            <div class="form-field"><label>Tier</label><select id="devEditTier"></select></div>
+            <div class="form-field"><label>Base value ($)</label><input type="number" id="devEditValue"></div>
+            <div class="form-field"><label>Total copies</label><input type="number" id="devEditStock"></div>
+          </div>
+
+          <div class="form-grid" style="margin-top:12px;">
+            <div class="form-field"><label>Deleted copies</label><input type="number" id="devEditDeleted"></div>
+            <div class="form-field"><label>Owners</label><input type="number" id="devEditOwners"></div>
+            <div class="form-field"><label>Premium copies</label><input type="number" id="devEditPremiumCopies"></div>
+            <div class="form-field"><label>Premium owners</label><input type="number" id="devEditPremiumOwners"></div>
+            <div class="form-field"><label>Hoarded (%)</label><input type="number" id="devEditHoardPct" step="0.1" placeholder="e.g. 3.5"></div>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="devEditValueItem">
+            <label for="devEditValueItem">Value item — sells consistently above its tier's fair price (hype/overpay)</label>
+          </div>
+
+          <div style="margin-top:14px;">
+            <label style="display:block; font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); margin-bottom:7px;">Market trend</label>
+            <div class="toggle-group" id="devTrendState">
+              <button type="button" class="toggle-btn" data-val="stable" onclick="setDevTrendState('stable')">Stable</button>
+              <button type="button" class="toggle-btn" data-val="rising" onclick="setDevTrendState('rising')">Rising</button>
+              <button type="button" class="toggle-btn" data-val="tanking" onclick="setDevTrendState('tanking')">Tanking</button>
+            </div>
+            <div class="form-grid" style="margin-top:10px;" id="devTrendCustomFields">
+              <div class="form-field"><label>Target price ($)</label><input type="number" id="devTrendTarget" placeholder="Price to drift toward"></div>
+              <div class="form-field"><label>Duration (days)</label><input type="number" id="devTrendDays" placeholder="e.g. 14"></div>
+            </div>
+            <p class="field-hint">Leave target/duration blank to use a sensible default (~1.6x up or ~0.4x down over 30 days). Once the duration passes, the item settles at the target and stays there.</p>
+          </div>
+
+          <div class="dev-actions">
+            <button class="btn" onclick="saveDevEditItem()">Save changes</button>
+            <button class="btn btn-ghost" onclick="resetDevEditItem()">Reset to default</button>
+          </div>
+          <div class="dev-status" id="devEditStatus"></div>
+        </div>
+
+        <div class="dev-card">
+          <h3>➕ Add a new blade</h3>
+          <p class="dev-sub">Creates a brand-new entry on the shared market with its own backfilled history.</p>
+          <div class="form-grid">
+            <div class="form-field" style="grid-column:1/-1;"><label>Name</label><input type="text" id="devNewName" placeholder="e.g. Phoenix Reaper"></div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Image URL</label>
+              <input type="url" id="devNewImageUrl" placeholder="https://…">
+              <div class="img-preview" id="devNewImagePreview" style="margin-top:8px;">No image</div>
+            </div>
+            <div class="form-field"><label>Tier</label><select id="devNewTier"></select></div>
+            <div class="form-field"><label>Base value ($)</label><input type="number" id="devNewValue" placeholder="e.g. 5000000"></div>
+            <div class="form-field"><label>RAP ($, optional)</label><input type="number" id="devNewRap" placeholder="defaults to value"></div>
+            <div class="form-field"><label>Stock (optional)</label><input type="number" id="devNewStock" placeholder="defaults to tier range"></div>
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="devNewValueItem">
+            <label for="devNewValueItem">Value item</label>
+          </div>
+          <div class="dev-actions"><button class="btn" onclick="addDevNewItem()">Add blade to ledger</button></div>
+          <div class="dev-status" id="devAddStatus"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this) closeModal()">
+    <div class="ticket ticket-wide" id="ticketEl">
+      <button class="ticket-close" onclick="closeModal()" aria-label="Close">✕</button>
+      <div class="ticket-head">
+        <div class="blade-img-wrap"><img id="modalImg" src="" alt=""></div>
+        <div class="ticket-head-text">
+          <h2 id="modalName"></h2>
+          <div class="chip-row" style="justify-content:flex-start;">
+            <span class="tier-chip" id="modalTier"></span>
+            <span class="trend-chip" id="modalTrendChip"></span>
+            <span class="value-item-chip" id="modalValueItemChip" style="display:none;">Value Item</span>
+          </div>
+        </div>
+      </div>
+      <div class="ticket-divider"></div>
+      <div class="ticket-stats">
+        <div class="ticket-stat">
+          <div class="stock-label">Recent average price</div>
+          <div class="stock-value value-value mono" id="modalRap"></div>
+          <div class="stock-note mono" id="modalRapExact"></div>
+        </div>
+        <div class="ticket-stat">
+          <div class="stock-label">Total copies</div>
+          <div class="stock-value mono" id="modalStock"></div>
+        </div>
+      </div>
+      <div class="grind-note" id="modalGrindNote"></div>
+
+      <div class="chart-block">
+        <div class="chart-tabs">
+          <button type="button" class="chart-tab-btn active" data-tab="history" onclick="switchChartTab('history')">History</button>
+          <button type="button" class="chart-tab-btn" data-tab="copies" onclick="switchChartTab('copies')">Copies</button>
+          <button type="button" class="chart-tab-btn" data-tab="ownership" onclick="switchChartTab('ownership')">Ownership</button>
+        </div>
+        <div class="chart-controls">
+          <select id="rangeSelect" onchange="onRangeChange()"></select>
+          <div class="chart-range"><span id="chartStartDate"></span><span class="arrow">→</span><span id="chartEndDate"></span></div>
+        </div>
+        <div class="chart-wrap" id="chartWrap">
+          <svg id="chartSvg" viewBox="0 0 600 230" preserveAspectRatio="none"></svg>
+          <div class="chart-tooltip" id="chartTooltip"></div>
+        </div>
+        <div class="chart-legend" id="chartLegend"></div>
+
+        <div class="detail-stats" id="copiesStats" style="display:none;">
+          <div class="detail-tile"><div class="dt-label">Total copies</div><div class="dt-value mono" id="dsTotalCopies"></div></div>
+          <div class="detail-tile"><div class="dt-label">Available copies</div><div class="dt-value mono" id="dsAvailableCopies"></div></div>
+          <div class="detail-tile"><div class="dt-label">Deleted copies</div><div class="dt-value mono" id="dsDeletedCopies" style="color:var(--down);"></div></div>
+        </div>
+        <p class="delete-note" id="copiesDeleteNote" style="display:none;">Blades get deleted when their durability finally breaks for good, or when their owner's account is removed for a Terms of Service violation.</p>
+
+        <div class="detail-stats" id="ownershipStats" style="display:none;">
+          <div class="detail-tile"><div class="dt-label">Owners</div><div class="dt-value mono" id="dsOwners"></div></div>
+          <div class="detail-tile"><div class="dt-label">Premium owners</div><div class="dt-value mono" id="dsPremiumOwners"></div></div>
+          <div class="detail-tile"><div class="dt-label">Premium copies</div><div class="dt-value mono" id="dsPremiumCopies"></div></div>
+          <div class="detail-tile"><div class="dt-label">Hoarded copies</div><div class="dt-value mono" id="dsHoardedCopies"></div></div>
+          <div class="detail-tile"><div class="dt-label">Percent hoarded</div><div class="dt-value mono" id="dsPercentHoarded" style="color:var(--gold);"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ================= currency icons ================= */
+    const TOKEN_ICON_SVG = '<svg class="cur-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#f4c430" stroke="#c99a00" stroke-width="1.5"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="#c99a00" stroke-width="1.2"/><path d="M12 8v8M9.5 10h5M9.5 14h5" stroke="#c99a00" stroke-width="1.2" stroke-linecap="round"/></svg>';
+    const CRYSTAL_ICON_SVG = '<svg class="cur-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L4 9l8 13 8-13-8-7z" fill="#a855f7" stroke="#7e22ce" stroke-width="1.2" stroke-linejoin="round"/><path d="M4 9h16M12 2v20" stroke="#7e22ce" stroke-width="1" opacity="0.6"/></svg>';
+
+    /* ================= tier metadata ================= */
+    const TIER_META = {
+      mystery:   { label: '???',      color: 'var(--mystery)',   rank: 0 },
+      event:     { label: 'Limited',   color: 'var(--ember)',     rank: 1 },
+      mythical:  { label: 'Mythical',  color: 'var(--mythical)',  rank: 2 },
+      legendary: { label: 'Legendary', color: 'var(--legendary)', rank: 3 },
+      epic:      { label: 'Epic',      color: 'var(--epic)',      rank: 4 },
+      rare:      { label: 'Rare',      color: 'var(--rare)',      rank: 5 },
+      uncommon:  { label: 'Uncommon',  color: 'var(--uncommon)',  rank: 6 },
+      common:    { label: 'Common',    color: 'var(--common)',   rank: 7 }
+    };
+    const TIER_ORDER = ['mystery','event','mythical','legendary','epic','rare','uncommon','common'];
+
+    /* ================= pure formatting helpers ================= */
+    function formatCurrency(n){
+      const sign = n < 0 ? '-' : '';
+      const abs = Math.abs(n);
+      if(abs >= 1e12) return sign + '$' + trimZeros((abs/1e12).toFixed(2)) + 'T';
+      if(abs >= 1e9)  return sign + '$' + trimZeros((abs/1e9).toFixed(2)) + 'B';
+      if(abs >= 1e6)  return sign + '$' + trimZeros((abs/1e6).toFixed(2)) + 'M';
+      if(abs >= 1e3)  return sign + '$' + trimZeros((abs/1e3).toFixed(1)) + 'K';
+      return sign + '$' + abs.toLocaleString();
+    }
+    function trimZeros(s){ return s.replace(/\.0+$/,'').replace(/(\.\d*[1-9])0+$/,'$1'); }
+
+    function formatGrindNote(value){
+      const days = value / 75; // midpoint of the ~50-100/day daily grind
+      if(days < 1) return 'Less than a day of dailies to grind out.';
+      if(days < 365) return `≈ ${Math.round(days).toLocaleString()} days of dailies to grind out.`;
+      const years = days / 365;
+      if(years < 1000) return `≈ ${years < 10 ? years.toFixed(1) : Math.round(years).toLocaleString()} years of dailies to grind out.`;
+      return `≈ ${Math.round(years).toLocaleString()} years of dailies — basically un-grindable, trade for it instead.`;
+    }
+
+    /** Trend chip now reflects live server trend state, not a client-computed delta. */
+    function trendChipInfo(item){
+      if(item.trend.state === 'stable') return { cls: 'flat', text: 'stable' };
+      const cls = item.trend.state === 'rising' ? 'up' : 'down';
+      const arrow = item.trend.state === 'rising' ? '▲' : '▼';
+      return { cls, text: `${arrow} ${item.trend.state}` };
+    }
+
+    function trendDetailText(item){
+      if(item.trend.state === 'stable') return 'Holding steady.';
+      const now = Date.now();
+      const elapsedHours = (now - item.trend.legStart) / 3600000;
+      const remainingHours = Math.max(0, item.trend.etaHours - elapsedHours);
+      const remainingDays = remainingHours / 24;
+      const dir = item.trend.state === 'rising' ? 'Rising toward' : 'Tanking toward';
+      const timeText = remainingDays < 1 ? 'settling soon' : `~${Math.ceil(remainingDays)} day${Math.ceil(remainingDays)===1?'':'s'} left`;
+      return `${dir} ${formatCurrency(item.trend.target)} · ${timeText}`;
+    }
+
+    /* ================= chart data helpers ================= */
+    const RANGE_DAYS = { '1d':1, '3d':3, '1w':7, '1m':30, '3m':90, '6m':182, '1y':365, 'All':Infinity };
+    const RANGE_OPTIONS = {
+      history:   ['1d','3d','1w','1m','3m','6m','1y','All'],
+      copies:    ['1w','1m','3m','6m','1y','All'],
+      ownership: ['1w','1m','3m','6m','1y','All']
+    };
+
+    function filterByRange(points, rangeKey){
+      if(!points.length) return points;
+      const days = RANGE_DAYS[rangeKey] ?? Infinity;
+      if(!isFinite(days)) return points;
+      const cutoff = points[points.length - 1].date.getTime() - days * 86400000;
+      const filtered = points.filter(p => p.date.getTime() >= cutoff);
+      return filtered.length >= 2 ? filtered : points.slice(-2);
+    }
+
+    /** Maps a raw backend HistoryPoint {t, price, volume, deletedCopies, owners, premiumCopies, premiumOwners, hoardedCopies}
+     *  into the shape the chart renderer expects for all three tabs at once. */
+    function toChartPoint(p, itemStock){
+      return {
+        date: new Date(p.t),
+        price: p.price,
+        volume: p.volume,
+        deleted: p.deletedCopies,
+        available: Math.max(0, itemStock - p.deletedCopies),
+        owners: p.owners,
+        premiumOwners: p.premiumOwners,
+        premiumCopies: p.premiumCopies,
+      };
+    }
+
+    function deriveDisplayStats(item){
+      const availableCopies = Math.max(0, item.stock - item.deletedCopies);
+      const percentHoarded = availableCopies > 0 ? (item.hoardedCopies / availableCopies) * 100 : 0;
+      return { availableCopies, percentHoarded };
+    }
+
+    /* ================= API client ================= */
+    const DEV_CODE = 'Kiki';
+    let authToken = null;
+    let currentUsername = null;
+    try { authToken = localStorage.getItem('bb_token'); currentUsername = localStorage.getItem('bb_username'); } catch(e){}
+
+    async function apiFetch(path, opts){
+      opts = opts || {};
+      const headers = Object.assign({ 'content-type': 'application/json' }, opts.headers || {});
+      if(authToken) headers['authorization'] = 'Bearer ' + authToken;
+      let res;
+      try{
+        res = await fetch(path, Object.assign({}, opts, { headers }));
+      }catch(e){
+        throw new Error('Network error — could not reach the server.');
+      }
+      let data = null;
+      try{ data = await res.json(); }catch(e){}
+      if(!res.ok){
+        throw new Error((data && data.error) || ('Request failed (' + res.status + ')'));
+      }
+      return data;
+    }
+
+    function saveSession(token, username){
+      authToken = token; currentUsername = username;
+      try{ localStorage.setItem('bb_token', token); localStorage.setItem('bb_username', username); }catch(e){}
+    }
+    function clearSession(){
+      authToken = null; currentUsername = null;
+      try{ localStorage.removeItem('bb_token'); localStorage.removeItem('bb_username'); }catch(e){}
+    }
+
+    /* ================= auth gate ================= */
+    let authMode = 'login';
+    function switchAuthTab(mode){
+      authMode = mode;
+      document.querySelectorAll('.auth-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === mode));
+      document.getElementById('authSubmitBtn').textContent = mode === 'login' ? 'Sign In' : 'Create Account';
+      document.getElementById('authError').textContent = '';
+    }
+
+    async function submitAuth(){
+      const username = document.getElementById('authUsername').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const errEl = document.getElementById('authError');
+      errEl.textContent = '';
+      if(!username || !password){ errEl.textContent = 'Please fill in both fields.'; return; }
+      try{
+        const data = await apiFetch('/api/auth', {
+          method: 'POST',
+          body: JSON.stringify({ action: authMode, username, password })
+        });
+        saveSession(data.token, data.username);
+        await enterApp();
+      }catch(e){
+        errEl.textContent = e.message || 'Something went wrong.';
+      }
+    }
+
+    async function handleLogout(){
+      try{ await apiFetch('/api/auth', { method: 'POST', body: JSON.stringify({ action: 'logout' }) }); }catch(e){}
+      clearSession();
+      document.getElementById('appRoot').style.display = 'none';
+      document.getElementById('authOverlay').style.display = 'flex';
+      document.getElementById('authUsername').value = '';
+      document.getElementById('authPassword').value = '';
+    }
+
+    async function tryResumeSession(){
+      if(!authToken) return false;
+      try{
+        const data = await apiFetch('/api/auth', { method: 'POST', body: JSON.stringify({ action: 'me' }) });
+        currentUsername = data.username;
+        return true;
+      }catch(e){
+        clearSession();
+        return false;
+      }
+    }
+
+    /* ================= local catalog (names + images only — seeds the server) ================= */
+    const swords = [
+      { name: "Emerald Warden Blade", image: "https://static.wikia.nocookie.net/bladeball/images/e/ef/Emerald_Warden_Blade.PNG/revision/latest/scale-to-width-down/180?cb=20240518195128" },
+      { name: "Red Saber", image: "https://static.wikia.nocookie.net/bladeball/images/4/43/Red_Saber.PNG/revision/latest/scale-to-width-down/180?cb=20240518195536" },
+      { name: "Etherium Dagger", image: "https://static.wikia.nocookie.net/bladeball/images/3/34/Etherium_Dagger.png/revision/latest/scale-to-width-down/180?cb=20240518195938" },
+      { name: "Spark Sword", image: "https://static.wikia.nocookie.net/bladeball/images/4/42/Spark_Sword.png/revision/latest/scale-to-width-down/180?cb=20240518195513" },
+      { name: "Excalibur", image: "https://static.wikia.nocookie.net/bladeball/images/8/83/Exacalibur_Image.png/revision/latest/scale-to-width-down/180?cb=20240519002701" },
+      { name: "Holy Sword", image: "" },
+      { name: "Trident", image: "" },
+      { name: "Holy Axe", image: "" },
+      { name: "Solarus", image: "" },
+      { name: "Cyber Blade", image: "" },
+      { name: "Aurorum", image: "" },
+      { name: "Musara Lightning", image: "" },
+      { name: "Thunderous Hammer", image: "" },
+      { name: "Zoru", image: "" },
+      { name: "Ghostwalker", image: "" },
+      { name: "Venomshank", image: "" },
+      { name: "Darkheart", image: "" },
+      { name: "Soul Scythe", image: "" },
+      { name: "Windforce", image: "" },
+      { name: "Illumina", image: "" },
+      { name: "Firebrand", image: "" },
+      { name: "Solans", image: "" },
+      { name: "Void Sword", image: "" },
+      { name: "Dune Cleaver", image: "" },
+      { name: "Empyrean Greatblade", image: "https://static.wikia.nocookie.net/bladeball/images/2/25/Empyrean_Greatblade.png/revision/latest/scale-to-width-down/284?cb=20240503064920" },
+      { name: "Oni Claws", image: "https://static.wikia.nocookie.net/bladeball/images/2/21/Oni_Claws.png/revision/latest/scale-to-width-down/284?cb=20240503065124" },
+      { name: "Cyber Scythe", image: "https://static.wikia.nocookie.net/bladeball/images/0/08/Cyber_Scythe.png/revision/latest/scale-to-width-down/284?cb=20240503065706" },
+      { name: "Wavelight Greatblade", image: "https://static.wikia.nocookie.net/bladeball/images/6/61/Wavelight_Greatblade.png/revision/latest/scale-to-width-down/284?cb=20240503065924" },
+      { name: "Prince Blade", image: "https://static.wikia.nocookie.net/bladeball/images/a/a5/Prince_Blade.png/revision/latest/scale-to-width-down/284?cb=20240503070127" },
+      { name: "Hallow's Edge", image: "https://static.wikia.nocookie.net/bladeball/images/f/fa/Hallow%27s_Edge.png/revision/latest/scale-to-width-down/284?cb=20240503070709" },
+      { name: "Nebula Scythe", image: "https://static.wikia.nocookie.net/bladeball/images/a/a9/Nebula_Scythe_New.png/revision/latest/scale-to-width-down/284?cb=20250401170049" },
+      { name: "Dual Nebula Scythe", image: "https://static.wikia.nocookie.net/bladeball/images/8/81/Dual_Nebula_Scythe.png/revision/latest/scale-to-width-down/284?cb=20231220083848" },
+      { name: "Ether Blade", image: "https://static.wikia.nocookie.net/bladeball/images/8/85/Ether_Blade.png/revision/latest/scale-to-width-down/284?cb=20231220083848" },
+      { name: "Dual Ether Blade", image: "https://static.wikia.nocookie.net/bladeball/images/3/3f/Dual_Ether_Blade.png/revision/latest/scale-to-width-down/284?cb=20240503071525" },
+      { name: "Vanguard Shield", image: "https://static.wikia.nocookie.net/bladeball/images/0/02/Vanguard_Shield.png/revision/latest/scale-to-width-down/284?cb=20240503071713" },
+      { name: "Empyrean Fortress", image: "https://static.wikia.nocookie.net/bladeball/images/4/4d/Empyrean_Fortress.png/revision/latest/scale-to-width-down/284?cb=20231220083847" },
+      { name: "Nebula's Lightning", image: "https://static.wikia.nocookie.net/bladeball/images/9/9e/Nebula%27s_Lightning.png/revision/latest/scale-to-width-down/284?cb=20240503082811" },
+      { name: "Dual Nebula's Lightning", image: "https://static.wikia.nocookie.net/bladeball/images/4/4a/Dual_Nebula%27s_Lightning.png/revision/latest/scale-to-width-down/284?cb=20240503082834" },
+      { name: "Yin Yang Katana", image: "https://static.wikia.nocookie.net/bladeball/images/1/13/Yin_Yang_Katana.png/revision/latest/scale-to-width-down/284?cb=20231227132541" },
+      { name: "Dual Yin Yang Katana", image: "https://static.wikia.nocookie.net/bladeball/images/f/f6/Dual_Yin_Yang_Katana.png/revision/latest/scale-to-width-down/284?cb=20231227132541" },
+      { name: "Yin Yang Scythe", image: "" },
+      { name: "Dual Yin Yang Scythe", image: "" },
+      { name: "Blackhole Katana", image: "" },
+      { name: "Dual Blackhole Katana", image: "" },
+      { name: "Blackhole Scythe", image: "" },
+      { name: "Dual Blackhole Scythe", image: "" },
+      { name: "Sakura Katana", image: "" },
+      { name: "Dual Sakura Katana", image: "" },
+      { name: "Sakura Scythe", image: "" },
+      { name: "Dual Sakura Scythe", image: "" },
+      { name: "Singularity Katana", image: "" },
+      { name: "Dual Singularity Katana", image: "" },
+      { name: "Singularity Scythe", image: "" },
+      { name: "Dual Singularity Scythe", image: "" },
+      { name: "Nebula Yoru", image: "" },
+      { name: "Dual Nebula Yoru", image: "" },
+      { name: "Dragon Slayer", image: "" },
+      { name: "Dual Dragon Slayer", image: "" },
+      { name: "Wispwind Reaper", image: "" },
+      { name: "Dual Wispwind Reaper", image: "" },
+      { name: "Kurogin Scythe", image: "" },
+      { name: "Dual Kurogin Scythe", image: "" },
+      { name: "Raven Scythe", image: "" },
+      { name: "Dual Raven Scythe", image: "" },
+      { name: "Nebula Claws", image: "" },
+      { name: "Crimson Katana", image: "" },
+      { name: "Dual Crimson Katana", image: "" },
+      { name: "Crimson Eclipse", image: "" },
+      { name: "Dual Crimson Eclipse", image: "" },
+      { name: "Prismatic Katana", image: "" },
+      { name: "Dual Prismatic Katana", image: "" },
+      { name: "Prismatic Harvester", image: "" },
+      { name: "Double Sided Prismatic", image: "" },
+      { name: "Aetherial Azure Katana", image: "" },
+      { name: "Dual Aetherial Azure Katana", image: "" },
+      { name: "Aetherial Azure Reckoner", image: "" },
+      { name: "Dual Aetherial", image: "" },
+      { name: "Nebula Blade", image: "" },
+      { name: "Dual Nebula Blade", image: "" },
+      { name: "Crystal Greatblade", image: "" },
+      { name: "Dual Crystal Greatblade", image: "" },
+      { name: "Crystal Reaperblade", image: "" },
+      { name: "Dual Crystal Reaperblade", image: "" },
+      { name: "Voltfire Blade", image: "" },
+      { name: "Dual Voltfire Blade", image: "" },
+      { name: "Voltfire Lash", image: "" },
+      { name: "Dual Voltfire Lash", image: "" },
+      { name: "Nebula Katana", image: "" },
+      { name: "Dual Nebula Katana", image: "" },
+      { name: "Nightfall Violin", image: "" },
+      { name: "Lunar Parasol", image: "" },
+      { name: "Love Blade", image: "" },
+      { name: "Dual Love Blade", image: "" },
+      { name: "Cupid's Bow", image: "" },
+      { name: "Shadow Dagger", image: "" },
+      { name: "Dual Shadow Daggers", image: "" },
+      { name: "Shadow Mirage", image: "" },
+      { name: "Dual Shadow Mirage", image: "" },
+      { name: "Crystal Hammer", image: "" },
+      { name: "Dual Crystal Hammer", image: "" },
+      { name: "Crystal Scissors", image: "" },
+      { name: "Void Blade", image: "" },
+      { name: "Dual Void Blades", image: "" },
+      { name: "Void Scythe", image: "" },
+      { name: "Dual Void Scythes", image: "" },
+      { name: "Stardust Katana", image: "" },
+      { name: "Dual Stardust Katana", image: "" },
+      { name: "Stardust Bow", image: "" },
+      { name: "Princess Katana", image: "" },
+      { name: "Dual Princess Katana", image: "" },
+      { name: "King Blade", image: "" },
+      { name: "Queen Blade", image: "" },
+      { name: "Dual Royal Blades", image: "" },
+      { name: "Stellar Blade", image: "" },
+      { name: "Dual Stellar Blade", image: "" },
+      { name: "Stellar Revolver", image: "" },
+      { name: "Dual Stellar Revolver", image: "" },
+      { name: "Nebula Blaster", image: "" },
+      { name: "Dual Nebula Blasters", image: "" },
+      { name: "Blossom Blade", image: "" },
+      { name: "Dual Blossom Blade", image: "" },
+      { name: "Blossom Scythe", image: "" },
+      { name: "Dual Blossom Scythe", image: "" },
+      { name: "Demonic Blade", image: "" },
+      { name: "Dual Demonic Blade", image: "" },
+      { name: "Demonic Scythe", image: "" },
+      { name: "Dual Demonic Scythe", image: "" },
+      { name: "Frostblade", image: "" },
+      { name: "Ocean's Lament", image: "" },
+      { name: "Noob", image: "" },
+      { name: "Forsaken Riftide", image: "" },
+      { name: "Heavenly Sword", image: "" },
+      { name: "Dual Heavenly Sword", image: "" },
+      { name: "Heavenly Chakram", image: "" },
+      { name: "Angel Greatsword", image: "" },
+      { name: "Devil Greatsword", image: "" },
+      { name: "Dual Eternal Greatsword", image: "" },
+      { name: "Desert Blade", image: "" },
+      { name: "Dual Desert Blade", image: "" },
+      { name: "Desert Claws", image: "" },
+      { name: "Astral Sword", image: "" },
+      { name: "Dual Astrals Sword", image: "" },
+      { name: "Astral Bow", image: "" },
+      { name: "Serene Blade", image: "" },
+      { name: "Dual Serene Blade", image: "" },
+      { name: "Serene Scythe", image: "" },
+      { name: "Dual Serene Scythe", image: "" },
+      { name: "Lightning Dagger", image: "" },
+      { name: "Dual Lightning Dagger", image: "" },
+      { name: "Lightning Sickle", image: "" },
+      { name: "Dual Lightning Sickle", image: "" },
+      { name: "Frigid Blade", image: "" },
+      { name: "Dual Frigid Blade", image: "" },
+      { name: "Frigid Scythe", image: "" },
+      { name: "Dual Frigid Scythe", image: "" },
+      { name: "Runic Blade", image: "" },
+      { name: "Dual Runic Blade", image: "" },
+      { name: "Runic Scythe", image: "" },
+      { name: "Dual Runic Scythe", image: "" },
+      { name: "Chroma Blade", image: "" },
+      { name: "Chroma Scythe", image: "" },
+      { name: "Dual Chroma Set", image: "" },
+      { name: "Eclipse Gleam", image: "" },
+      { name: "Dual Eclipse Gleam", image: "" },
+      { name: "Eclipse Blaster", image: "" },
+      { name: "Dual Eclipse Blasters", image: "" },
+      { name: "Blade of the Fallen King", image: "" },
+      { name: "Kingsguard's Edge", image: "" },
+      { name: "Abyssal Blade", image: "" },
+      { name: "Dual Abyssal Blade", image: "" },
+      { name: "Abyssal Shield", image: "" },
+      { name: "Dual Abyssal Set", image: "" },
+      { name: "Resurrection Blade", image: "" },
+      { name: "Dual Resurrection Blade", image: "" },
+      { name: "Resurrection Scythe", image: "" },
+      { name: "Dual Resurrection Scythe", image: "" },
+      { name: "Twilight Blade", image: "" },
+      { name: "Dual Twilight Blades", image: "" },
+      { name: "Twilight Scythe", image: "" },
+      { name: "Dual Twilight Scythes", image: "" },
+      { name: "Yin Yang Parasol", image: "" },
+      { name: "Yin Yang Greatsword", image: "" },
+      { name: "Dual Yin Yang Greatsword", image: "" },
+      { name: "Aetherial Kunai", image: "" },
+      { name: "Dual Aetherial Kunai", image: "" },
+      { name: "Aetherial Lance", image: "" },
+      { name: "Rose Blade", image: "" },
+      { name: "Dual Rose Blade", image: "" },
+      { name: "Rose Bow", image: "" },
+      { name: "Infinite Blade", image: "" },
+      { name: "Dual Infinite Blade", image: "" },
+      { name: "Infinite Scythe", image: "" },
+      { name: "Dual Infinite Scythe", image: "" },
+      { name: "Shark", image: "" },
+      { name: "Sinister Blade", image: "" },
+      { name: "Dual Sinister Blade", image: "" },
+      { name: "Sinister Blaster", image: "" },
+      { name: "Dual Sinister Blasters", image: "" },
+      { name: "Black Ninja Katana", image: "" },
+      { name: "Blue Ninja Katana", image: "" },
+      { name: "Red Ninja Katana", image: "" },
+      { name: "Green Ninja Katana", image: "" },
+      { name: "Pink Ninja Katana", image: "" },
+      { name: "Chroma Ninja Katana", image: "" },
+      { name: "Divine Sword", image: "" },
+      { name: "Dual Divine Sword", image: "" },
+      { name: "Divine Blaster", image: "" },
+      { name: "Dual Divine Blaster", image: "" },
+      { name: "Phantom Blade", image: "" },
+      { name: "Dual Phantom Blade", image: "" },
+      { name: "Phantom Scythe", image: "" },
+      { name: "Dual Phantom Scythe", image: "" },
+      { name: "Jellyfish Parasol", image: "" },
+      { name: "Nebula Sniper", image: "" },
+      { name: "Arachne Blade", image: "" },
+      { name: "Dual Arachne Blade", image: "" },
+      { name: "Arachne Scythe", image: "" },
+      { name: "Dual Arachne Scythe", image: "" },
+      { name: "North Blade", image: "" },
+      { name: "Dual North Blade", image: "" },
+      { name: "North Star", image: "" },
+      { name: "Butterfly Blade", image: "" },
+      { name: "Dual Butterfly Blade", image: "" },
+      { name: "Butterfly Bow", image: "" },
+      { name: "Sakura Fan", image: "" },
+      { name: "Dual Sakura Fan", image: "" },
+      { name: "Sakura Parasol", image: "" },
+      { name: "Wonderwisp Greatsword", image: "" },
+      { name: "Dual Wonderwisp Greatsword", image: "" },
+      { name: "Black Ninja Star", image: "" },
+      { name: "Blue Ninja Star", image: "" },
+      { name: "Red Ninja Star", image: "" },
+      { name: "Green Ninja Star", image: "" },
+      { name: "Pink Ninja Star", image: "" },
+      { name: "Chroma Ninja Star", image: "" },
+      { name: "Obsidian Blade", image: "" },
+      { name: "Dual Obsidian Blade", image: "" },
+      { name: "Obsidian Scythe", image: "" },
+      { name: "Dual Obsidian Scythe", image: "" },
+      { name: "Vaporwave Blade", image: "" },
+      { name: "Dual Vaporwave Blade", image: "" },
+      { name: "Vaporwave Crusher", image: "" },
+      { name: "Dual Vaporwave Crusher", image: "" },
+      { name: "Hakai Blade", image: "" },
+      { name: "Dual Hakai Blade", image: "" },
+      { name: "Hakai Scorpion", image: "" },
+      { name: "Dual Hakai Set", image: "" },
+      { name: "Cursed Blade", image: "" },
+      { name: "Dual Cursed Blade", image: "" },
+      { name: "Cursed Scythe", image: "" },
+      { name: "Dual Cursed Scythe", image: "" },
+      { name: "Soulrender Scythe", image: "" },
+      { name: "Kitty Launcher", image: "" },
+      { name: "Malice Blade", image: "" },
+      { name: "Dual Malice Blade", image: "" },
+      { name: "Malice Parasol", image: "" },
+      { name: "Seraphim", image: "" },
+      { name: "Starlight Axe", image: "" },
+      { name: "Dual Starlight Axe", image: "" },
+      { name: "Starlight Scythe", image: "" },
+      { name: "Dual Starlight Scythe", image: "" },
+      { name: "Mummy's Curse", image: "" },
+      { name: "Vampire Saw", image: "" },
+      { name: "Dual Vampire Saw", image: "" },
+      { name: "Vampire Sickle", image: "" },
+      { name: "Dual Vampire Sickle", image: "" },
+      { name: "Monarch Blade", image: "" },
+      { name: "Dual Monarch Blade", image: "" },
+      { name: "Monarch Shield", image: "" },
+      { name: "Dual Monarch Set", image: "" },
+      { name: "Coffin", image: "" },
+      { name: "Rosefire Blade", image: "" },
+      { name: "Dual Rosefire Blade", image: "" },
+      { name: "Rosefire Scythe", image: "" },
+      { name: "Dual Rosefire Scythe", image: "" },
+      { name: "Moonflower Katana", image: "" },
+      { name: "Moonflower Greatsword", image: "" },
+      { name: "Mothyx Blade", image: "" },
+      { name: "Dual Mothyx Blade", image: "" },
+      { name: "Mothyx Scissors", image: "" },
+      { name: "Harmonic Staff", image: "" },
+      { name: "Dual Harmonic Set", image: "" },
+      { name: "Harmonic Fan", image: "" },
+      { name: "Bubble Blade", image: "" },
+      { name: "Dual Bubble Blade", image: "" },
+      { name: "Bubble Blaster", image: "" },
+      { name: "Dual Bubble Blasters", image: "" },
+      { name: "Astraea Blade", image: "" },
+      { name: "Dual Astraea Blade", image: "" },
+      { name: "Astraea Staff", image: "" },
+      { name: "Dual Astraea Set", image: "" },
+      { name: "Dual Leviathan Set", image: "" },
+      { name: "Lumina Blade", image: "" },
+      { name: "Dual Lumina Blade", image: "" },
+      { name: "Lumina Bow", image: "" },
+      { name: "Snowveil Blade", image: "" },
+      { name: "Dual Snowveil Blade", image: "" },
+      { name: "Snowveil Scythe", image: "" },
+      { name: "Dual Snowveil Scythe", image: "" },
+      { name: "Krampus Blade", image: "" },
+      { name: "Dual Krampus Blade", image: "" },
+      { name: "Krampus Scythe", image: "" },
+      { name: "Dual Krampus Scythe", image: "" },
+      { name: "Runic Redblade", image: "" },
+      { name: "Floral Slicer", image: "" },
+      { name: "Aurora Bow", image: "" },
+      { name: "Thorned Sovereign", image: "" },
+      { name: "Festive Bow", image: "" },
+      { name: "Festive Chakram", image: "" },
+      { name: "Ornament Crushers", image: "" },
+      { name: "Jolly Scythe Set", image: "" },
+      { name: "Santa's Greatsword", image: "" },
+      { name: "Candycane Sniper", image: "" },
+      { name: "Snowball Launcher", image: "" },
+      { name: "Parasitic Dagger", image: "" },
+      { name: "Dual Parasitic Dagger", image: "" },
+      { name: "Parasitic Scythe", image: "" },
+      { name: "Dual Parasitic Scythe", image: "" },
+      { name: "Chroma Seal", image: "" },
+      { name: "Azurethorn Blade", image: "" },
+      { name: "Dual Azurethorn Blade", image: "" },
+      { name: "Azurethorn Scythe", image: "" },
+      { name: "Dual Azurethorn Scythe", image: "" },
+      { name: "Firebloom Blade", image: "" },
+      { name: "Dual Firebloom Blade", image: "" },
+      { name: "Firebloom Scythe", image: "" },
+      { name: "Dual Firebloom Scythe", image: "" },
+      { name: "Voidshard Blade", image: "" },
+      { name: "Dual Voidshard Blade", image: "" },
+      { name: "Voidshard Bow", image: "" },
+      { name: "Venomlight Scythe", image: "" },
+      { name: "Serpent's Greatsword", image: "" },
+      { name: "Wisteria Blade", image: "" },
+      { name: "Dual Wisteria Blade", image: "" },
+      { name: "Wisteria Parasol", image: "" },
+      { name: "Eternal Shield", image: "" },
+      { name: "Heart Blade", image: "" },
+      { name: "Dual Heart Blade", image: "" },
+      { name: "Heart Bow", image: "" },
+      { name: "Bloodline Blade", image: "" },
+      { name: "Dual Bloodline Blade", image: "" },
+      { name: "Bloodline Scythe", image: "" },
+      { name: "Dual Bloodline Scythe", image: "" },
+      { name: "Divinity Blade", image: "" },
+      { name: "Dual Divinity Blade", image: "" },
+      { name: "Divinity Scythe", image: "" },
+      { name: "Dual Divinity Scythe", image: "" },
+      { name: "Zephyr Blade", image: "" },
+      { name: "Dual Zephyr Blade", image: "" },
+      { name: "Zephyr Scythe", image: "" },
+      { name: "Dual Zephyr Scythe", image: "" },
+      { name: "The Conjurer", image: "" },
+      { name: "Ace", image: "" },
+      { name: "Frostbound Lantern", image: "" },
+      { name: "Inferno Katana", image: "" },
+      { name: "Dual Inferno Katana", image: "" },
+      { name: "Inferno Lance", image: "" },
+      { name: "Kraken", image: "" },
+      { name: "Zodiac Blade", image: "" },
+      { name: "Dual Zodiac Blade", image: "" },
+      { name: "Zodiac Parasol", image: "" },
+      { name: "Permafrost Blade", image: "" },
+      { name: "Dual Permafrost Blade", image: "" },
+      { name: "Permafrost Staff", image: "" },
+      { name: "Moonbeam Blade", image: "" },
+      { name: "Dual Moonbeam Blade", image: "" },
+      { name: "Moonbeam Bow", image: "" },
+      { name: "Floppy Chicken", image: "" },
+      { name: "The Curse", image: "" },
+      { name: "Ocean Dagger", image: "" },
+      { name: "Dual Ocean Dagger", image: "" },
+      { name: "Ocean Guitar", image: "" },
+      { name: "Blossom Katana", image: "" },
+      { name: "Loveclaw Blade", image: "" },
+      { name: "Dual Loveclaw Blade", image: "" },
+      { name: "Loveclaw Scythe", image: "" },
+      { name: "Dual Loveclaw Scythe", image: "" },
+      { name: "Nightclaw Blade", image: "" },
+      { name: "Dual Nightclaw Blade", image: "" },
+      { name: "Nightclaw Scythe", image: "" },
+      { name: "Dual Nightclaw Scythe", image: "" },
+      { name: "Emerald Blade", image: "" },
+      { name: "Dual Emerald Blade", image: "" },
+      { name: "Emerald Parasol", image: "" },
+      { name: "Shadow Monarch Blade", image: "" },
+      { name: "Dual Shadow Monarch Blade", image: "" },
+      { name: "Shadow Monarch Bow", image: "" },
+      { name: "Gleaming Katana", image: "" },
+      { name: "Dual Gleaming Katana", image: "" },
+      { name: "Gleaming Scythe", image: "" },
+      { name: "Dual Gleaming Scythe", image: "" },
+      { name: "Hollow Oath Katana", image: "" },
+      { name: "Cat Paw", image: "" },
+      { name: "Shatterflight Bird", image: "" },
+      { name: "Kraken Blade", image: "" },
+      { name: "Dual Kraken Blade", image: "" },
+      { name: "Kraken Scythe", image: "" },
+      { name: "Dual Kraken Scythe", image: "" },
+      { name: "Final Phase", image: "" },
+      { name: "Dual Final Phase", image: "" },
+      { name: "Oblivion Pike", image: "" },
+      { name: "Purity Blade", image: "" },
+      { name: "Dual Purity Blade", image: "" },
+      { name: "Purity Bow", image: "" },
+      { name: "Dreadborn Blade", image: "" },
+      { name: "Dual Dreadborn Blade", image: "" },
+      { name: "Dreadborn Scythe", image: "" },
+      { name: "Dual Dreadborn Scythe", image: "" },
+      { name: "Prismatic Odachi", image: "" },
+      { name: "Calamity Guardian", image: "" },
+      { name: "Spinalis", image: "" },
+      { name: "Soulbloom Blade", image: "" },
+      { name: "Dual Soulbloom Blade", image: "" },
+      { name: "Soulbloom Scissors", image: "" },
+      { name: "Lily Blade", image: "" },
+      { name: "Dual Lily Blade", image: "" },
+      { name: "Lily Parasol", image: "" },
+      { name: "Flutter Blade", image: "" },
+      { name: "Dual Flutter Blade", image: "" },
+      { name: "Flutter Bow", image: "" },
+      { name: "Valkyrien Blade", image: "" },
+      { name: "Dual Valkyrien Blade", image: "" },
+      { name: "Valkyrien Scythe", image: "" },
+      { name: "Dual Valkyrien Scythe", image: "" },
+      { name: "Black Oni Katana", image: "" },
+      { name: "Red Oni Katana", image: "" },
+      { name: "Purple Oni Katana", image: "" },
+      { name: "Blue Oni Katana", image: "" },
+      { name: "Pink Oni Katana", image: "" },
+      { name: "Chroma Oni Katana", image: "" },
+      { name: "Draconic Blade", image: "" },
+      { name: "Dual Draconic Blade", image: "" },
+      { name: "Draconic Twinblade", image: "" },
+      { name: "Dual Draconic Twinblade", image: "" },
+      { name: "Moonlight Blade", image: "" },
+      { name: "Dual Moonlight Blade", image: "" },
+      { name: "Moonlight Bow", image: "" },
+      { name: "Stormbane", image: "" },
+      { name: "T-Rex", image: "" },
+      { name: "Bloodmoon Blade", image: "" },
+      { name: "Dual Bloodmoon Blade", image: "" },
+      { name: "Bloodmoon Scythe", image: "" },
+      { name: "Dual Bloodmoon Scythe", image: "" },
+      { name: "Nyxpetal Blade", image: "" },
+      { name: "Dual Nyxpetal Blade", image: "" },
+      { name: "Nyxpetal Fan", image: "" },
+      { name: "Dual Nyxpetal Fan", image: "" },
+      { name: "Corrupt Blossom Blade", image: "" },
+      { name: "Dual Corrupt Blossom Blade", image: "" },
+      { name: "Corrupt Blossom Bow", image: "" },
+      { name: "Withered Blade", image: "" },
+      { name: "Dual Withered Blade", image: "" },
+      { name: "Withered Chakram", image: "" },
+      { name: "Star Wand", image: "" },
+      { name: "Oni Ghost", image: "" },
+      { name: "Hellchain Blade", image: "" },
+      { name: "Dual Hellchain Blade", image: "" },
+      { name: "Hellchain Scythe", image: "" },
+      { name: "Dual Hellchain Scythe", image: "" },
+      { name: "Lumenwing Blade", image: "" },
+      { name: "Dual Lumenwing Blade", image: "" },
+      { name: "Lumenwing Bow", image: "" },
+      { name: "Starbloom Blade", image: "" },
+      { name: "Dual Starbloom Blade", image: "" },
+      { name: "Starbloom Scythe", image: "" },
+      { name: "Dual Starbloom Scythe", image: "" },
+      { name: "Gravebone Blade", image: "" },
+      { name: "Dual Gravebone Blade", image: "" },
+      { name: "Gravebone Scythe", image: "" },
+      { name: "Dual Gravebone Scythe", image: "" },
+      { name: "Ribbon Blade", image: "" },
+      { name: "Dual Ribbon Blade", image: "" },
+      { name: "Ribbon Shield", image: "" },
+      { name: "Lily Katana", image: "" },
+      { name: "Pulseheart Set", image: "" },
+      { name: "Rosarium Blade", image: "" },
+      { name: "Dual Rosarium Blade", image: "" },
+      { name: "Rosarium Scythe", image: "" },
+      { name: "Dual Rosarium Scythe", image: "" },
+      { name: "Bloomveil Kunai", image: "" },
+      { name: "Dual Bloomveil Kunai", image: "" },
+      { name: "Bloomveil Lance", image: "" },
+      { name: "Heartbreaker Blade", image: "" },
+      { name: "Dual Heartbreaker Blade", image: "" },
+      { name: "Heartbreaker Scythe", image: "" },
+      { name: "Dual Heartbreaker Scythe", image: "" },
+      { name: "Black Cat Blade", image: "" },
+      { name: "Dual Black Cat Blade", image: "" },
+      { name: "Black Cat Scythe", image: "" },
+      { name: "Dual Black Cat Scythe", image: "" },
+      { name: "Aetherwatch Blade", image: "" },
+      { name: "Dual Aetherwatch Blade", image: "" },
+      { name: "Aetherwatch Scythe", image: "" },
+      { name: "Dual Aetherwatch Scythe", image: "" },
+      { name: "Hellwing Set", image: "" },
+      { name: "Skeleton Bride", image: "" },
+      { name: "Ghostfish Blade", image: "" },
+      { name: "Dual Ghostfish Blade", image: "" },
+      { name: "Ghostfish Bow", image: "" },
+      { name: "Corrupted Loveblade", image: "" },
+      { name: "Dual Corrupted Loveblade", image: "" },
+      { name: "Corrupted Fan", image: "" },
+      { name: "Dual Corrupted Fan", image: "" },
+      { name: "Lumenshell Blade", image: "" },
+      { name: "Dual Lumenshell Blade", image: "" },
+      { name: "Lumenshell Scythe", image: "" },
+      { name: "Dual Lumenshell Scythe", image: "" },
+      { name: "Ironrose Blade", image: "" },
+      { name: "Dual Ironrose Blade", image: "" },
+      { name: "Ironrose Lance", image: "" },
+      { name: "Sakura's Requiem", image: "" },
+      { name: "Wicked Crow", image: "" },
+      { name: "Fallen Angel", image: "" },
+      { name: "Samurai Katana", image: "" },
+      { name: "Dual Samurai Katana", image: "" },
+      { name: "Samurai Bow", image: "" },
+      { name: "Peachborne Blade", image: "" },
+      { name: "Dual Peachborne Blade", image: "" },
+      { name: "Peachborne Fan", image: "" },
+      { name: "Dual Peachborne Fan", image: "" },
+      { name: "Bloodpetal Blade", image: "" },
+      { name: "Dual Bloodpetal Blade", image: "" },
+      { name: "Bloodpetal Blaster", image: "" },
+      { name: "Dual Bloodpetal Blaster", image: "" },
+      { name: "Serpent", image: "" },
+      { name: "Aurelius", image: "" }
+    ];
+
+    let allSwords = [];
+
+    async function loadMarket(){
+      const indexLoading = document.getElementById('indexLoading');
+      const indexError = document.getElementById('indexError');
+      const indexContent = document.getElementById('indexContent');
+      indexLoading.style.display = 'flex';
+      indexError.style.display = 'none';
+      indexContent.style.display = 'none';
+      try{
+        let data = await apiFetch('/api/market');
+        if(data.items.length < swords.length){
+          // First-ever load (or a partial catalog) — seed any missing entries.
+          await apiFetch('/api/market', {
+            method: 'POST',
+            headers: { 'x-dev-code': DEV_CODE },
+            body: JSON.stringify({ action: 'seed', entries: swords })
+          });
+          data = await apiFetch('/api/market');
+        }
+        allSwords = data.items;
+        indexLoading.style.display = 'none';
+        indexContent.style.display = 'block';
+        renderStats();
+        renderLegend();
+        renderGrid();
+      }catch(e){
+        indexLoading.style.display = 'none';
+        indexError.style.display = 'block';
+        indexError.textContent = 'Could not load the market: ' + (e.message || 'unknown error');
+      }
+    }
+
+    function renderStats(){
+      const total = allSwords.length;
+      const totalStock = allSwords.reduce((sum, s) => sum + s.stock, 0);
+      const totalValue = allSwords.reduce((sum, s) => sum + s.rap, 0);
+      const limited = allSwords.filter(s => s.tier === 'event' || s.tier === 'mystery').length;
+      document.getElementById('statBlades').textContent = total.toLocaleString();
+      document.getElementById('statStock').textContent = totalStock.toLocaleString();
+      document.getElementById('statLimited').textContent = limited.toLocaleString();
+      document.getElementById('statValue').textContent = formatCurrency(totalValue);
+    }
+
+    function renderLegend(){
+      const row = document.getElementById('legendRow');
+      row.innerHTML = TIER_ORDER.map(key => {
+        const meta = TIER_META[key];
+        return `<span class="legend-item"><span class="legend-dot" style="--dot-color:${meta.color}"></span>${meta.label}</span>`;
+      }).join('');
+    }
+
+    function renderGrid(){
+      const searchInput = document.getElementById('searchInput');
+      const sortSelect = document.getElementById('sortSelect');
+      const resultsCount = document.getElementById('resultsCount');
+      const container = document.getElementById('bladeContainer');
+      const q = searchInput.value.trim().toLowerCase();
+      const sortVal = sortSelect.value;
+      let list = allSwords.filter(s => s.name.toLowerCase().includes(q));
+
+      list = list.slice().sort((a, b) => {
+        switch(sortVal){
+          case 'name-asc': return a.name.localeCompare(b.name);
+          case 'name-desc': return b.name.localeCompare(a.name);
+          case 'stock-asc': return a.stock - b.stock;
+          case 'stock-desc': return b.stock - a.stock;
+          case 'value-asc': return a.rap - b.rap;
+          case 'value-desc': return b.rap - a.rap;
+          case 'rarity': return (TIER_META[a.tier].rank - TIER_META[b.tier].rank) || (a.stock - b.stock);
+          default: return 0;
+        }
+      });
+
+      container.innerHTML = '';
+      const frag = document.createDocumentFragment();
+      list.forEach(sword => {
+        const meta = TIER_META[sword.tier];
+        const card = document.createElement('div');
+        card.className = `blade-card tier-${sword.tier}` + (sword.valueItem ? ' is-value-item' : '');
+        card.style.setProperty('--chip-color', meta.color);
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', `${sword.name}, ${meta.label} rarity, RAP around ${formatCurrency(sword.rap)}. View price chart.`);
+        const trendInfo = trendChipInfo(sword);
+        card.innerHTML = `
+          <div class="blade-img-wrap">
+            <img src="${sword.image || ''}" alt="${sword.name}" loading="lazy" onerror="this.src='https://via.placeholder.com/120/171a21/555?text=No+Image'">
+          </div>
+          <div class="blade-name">${sword.name}</div>
+          <div class="chip-row">
+            <span class="tier-chip">${meta.label}</span>
+            <span class="value-chip">${formatCurrency(sword.rap)}</span>
+          </div>
+          <div class="chip-row">
+            <span class="trend-chip ${trendInfo.cls}">${trendInfo.text}</span>
+            ${sword.valueItem ? '<span class="value-item-chip">Value</span>' : ''}
+          </div>
+        `;
+        card.addEventListener('click', () => openModal(sword));
+        card.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openModal(sword); } });
+        frag.appendChild(card);
+      });
+      container.appendChild(frag);
+      resultsCount.textContent = `${list.length.toLocaleString()} of ${allSwords.length.toLocaleString()} blades shown`;
+    }
+
+    /* ================= modal + chart ================= */
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalImg = document.getElementById('modalImg');
+    const modalName = document.getElementById('modalName');
+    const modalTier = document.getElementById('modalTier');
+    const modalTrendChip = document.getElementById('modalTrendChip');
+    const modalValueItemChip = document.getElementById('modalValueItemChip');
+    const modalStock = document.getElementById('modalStock');
+    const modalRap = document.getElementById('modalRap');
+    const modalRapExact = document.getElementById('modalRapExact');
+    const modalGrindNote = document.getElementById('modalGrindNote');
+    let currentModalItem = null;
+    let currentChartPoints = [];
+    let activeChartTab = 'history';
+    let activeRange = 'All';
+
+    function fmtAxisDate(d){ return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' }); }
+    function fmtTooltipDate(d){
+      const weekday = d.toLocaleDateString(undefined, { weekday: 'long' });
+      const md = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+      return `${weekday}, ${md}, ${time}`;
+    }
+
+    function populateDetailStats(sword){
+      const { availableCopies, percentHoarded } = deriveDisplayStats(sword);
+      document.getElementById('dsTotalCopies').textContent = sword.stock.toLocaleString();
+      document.getElementById('dsAvailableCopies').textContent = availableCopies.toLocaleString();
+      document.getElementById('dsDeletedCopies').textContent = sword.deletedCopies.toLocaleString();
+      document.getElementById('dsOwners').textContent = sword.owners.toLocaleString();
+      document.getElementById('dsPremiumOwners').textContent = sword.premiumOwners.toLocaleString();
+      document.getElementById('dsPremiumCopies').textContent = sword.premiumCopies.toLocaleString();
+      document.getElementById('dsHoardedCopies').textContent = sword.hoardedCopies.toLocaleString();
+      document.getElementById('dsPercentHoarded').textContent = percentHoarded.toFixed(1) + '%';
+    }
+
+    function populateRangeSelect(){
+      const sel = document.getElementById('rangeSelect');
+      const opts = RANGE_OPTIONS[activeChartTab];
+      sel.innerHTML = opts.map(o => `<option value="${o}">${o === 'All' ? 'All time' : o}</option>`).join('');
+      if(!opts.includes(activeRange)) activeRange = 'All';
+      sel.value = activeRange;
+    }
+
+    function switchChartTab(tab){
+      activeChartTab = tab;
+      document.querySelectorAll('.chart-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+      document.getElementById('copiesStats').style.display = tab === 'copies' ? 'grid' : 'none';
+      document.getElementById('copiesDeleteNote').style.display = tab === 'copies' ? 'block' : 'none';
+      document.getElementById('ownershipStats').style.display = tab === 'ownership' ? 'grid' : 'none';
+      populateRangeSelect();
+      renderActiveChart();
+    }
+
+    function onRangeChange(){
+      activeRange = document.getElementById('rangeSelect').value;
+      renderActiveChart();
+    }
+
+    function renderActiveChart(){
+      if(!currentModalItem || !currentChartPoints.length) return;
+      const points = filterByRange(currentChartPoints, activeRange);
+      if(activeChartTab === 'history'){
+        renderChartGeneric(points, [{ key: 'price', color: '#3ecf6e', label: 'Avg Daily Sales Price' }], {
+          barKey: 'volume', barColor: '#ff5c5c', barLabel: 'Sales Volume',
+          tooltipBuilder: p => `<span class="tt-date">${fmtTooltipDate(p.date)}</span>` +
+            `<span class="tt-dot" style="background:#3ecf6e;"></span>Avg Daily Sales Price: <strong>${Math.round(p.price).toLocaleString()}</strong><br>` +
+            `<span class="tt-dot" style="background:#ff5c5c;"></span>Sales Volume: <strong>${p.volume}</strong>`
+        });
+      } else if(activeChartTab === 'copies'){
+        renderChartGeneric(points, [
+          { key: 'available', color: '#3ecf6e', label: 'Available Copies' },
+          { key: 'deleted', color: '#ff5c5c', label: 'Deleted Copies' }
+        ], {
+          tooltipBuilder: p => `<span class="tt-date">${fmtTooltipDate(p.date)}</span>` +
+            `<span class="tt-dot" style="background:#3ecf6e;"></span>Available Copies: <strong>${p.available.toLocaleString()}</strong><br>` +
+            `<span class="tt-dot" style="background:#ff5c5c;"></span>Deleted Copies: <strong>${p.deleted.toLocaleString()}</strong>`
+        });
+      } else if(activeChartTab === 'ownership'){
+        renderChartGeneric(points, [
+          { key: 'owners', color: '#9aa1ad', label: 'Owners' },
+          { key: 'premiumOwners', color: '#3ecf6e', label: 'Premium Owners' },
+          { key: 'premiumCopies', color: '#4ea8ff', label: 'Premium Copies' }
+        ], {
+          tooltipBuilder: p => `<span class="tt-date">${fmtTooltipDate(p.date)}</span>` +
+            `<span class="tt-dot" style="background:#9aa1ad;"></span>Owners: <strong>${p.owners.toLocaleString()}</strong><br>` +
+            `<span class="tt-dot" style="background:#3ecf6e;"></span>Premium Owners: <strong>${p.premiumOwners.toLocaleString()}</strong><br>` +
+            `<span class="tt-dot" style="background:#4ea8ff;"></span>Premium Copies: <strong>${p.premiumCopies.toLocaleString()}</strong>`
+        });
+      }
+    }
+
+    async function openModal(sword){
+      currentModalItem = sword;
+      const meta = TIER_META[sword.tier];
+      modalImg.src = sword.image || 'https://via.placeholder.com/200/171a21/555?text=No+Image';
+      modalImg.alt = sword.name;
+      modalName.textContent = sword.name;
+      modalTier.textContent = meta.label;
+      modalTier.style.setProperty('--chip-color', meta.color);
+      const trendInfo = trendChipInfo(sword);
+      modalTrendChip.className = 'trend-chip ' + trendInfo.cls;
+      modalTrendChip.textContent = trendInfo.text;
+      modalValueItemChip.style.display = sword.valueItem ? 'inline-block' : 'none';
+      modalStock.textContent = sword.stock.toLocaleString();
+      modalRap.textContent = formatCurrency(sword.rap);
+      modalRapExact.textContent = '$' + Math.round(sword.rap).toLocaleString();
+      modalGrindNote.textContent = formatGrindNote(sword.rap) + '  ' + trendDetailText(sword);
+
+      populateDetailStats(sword);
+      activeChartTab = 'history';
+      activeRange = 'All';
+      document.querySelectorAll('.chart-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === 'history'));
+      document.getElementById('copiesStats').style.display = 'none';
+      document.getElementById('copiesDeleteNote').style.display = 'none';
+      document.getElementById('ownershipStats').style.display = 'none';
+      populateRangeSelect();
+
+      modalOverlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      // Fetch the live item + its full history — this is also what triggers
+      // server-side drift for this specific item if enough time has passed.
+      try{
+        const data = await apiFetch('/api/market?item=' + encodeURIComponent(sword.name));
+        currentModalItem = data.item;
+        const idx = allSwords.findIndex(s => s.name === sword.name);
+        if(idx >= 0) allSwords[idx] = data.item;
+        currentChartPoints = data.history.map(p => toChartPoint(p, data.item.stock));
+        // refresh the ticket header now that we may have fresher drifted data
+        modalRap.textContent = formatCurrency(currentModalItem.rap);
+        modalRapExact.textContent = '$' + Math.round(currentModalItem.rap).toLocaleString();
+        modalStock.textContent = currentModalItem.stock.toLocaleString();
+        const freshTrend = trendChipInfo(currentModalItem);
+        modalTrendChip.className = 'trend-chip ' + freshTrend.cls;
+        modalTrendChip.textContent = freshTrend.text;
+        modalGrindNote.textContent = formatGrindNote(currentModalItem.rap) + '  ' + trendDetailText(currentModalItem);
+        populateDetailStats(currentModalItem);
+        renderActiveChart();
+      }catch(e){
+        document.getElementById('chartLegend').innerHTML = `<span style="color:var(--down)">Could not load history: ${e.message}</span>`;
+      }
+    }
+
+    function closeModal(){
+      modalOverlay.classList.remove('open');
+      document.body.style.overflow = '';
+      currentModalItem = null;
+      currentChartPoints = [];
+    }
+    document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const chartSvg = document.getElementById('chartSvg');
+    const chartTooltip = document.getElementById('chartTooltip');
+    const chartWrap = document.getElementById('chartWrap');
+    const VW = 600, VH = 230, PAD_L = 4, PAD_R = 4, AXIS_Y = 214;
+
+    function renderChartGeneric(points, lineDefs, opts){
+      opts = opts || {};
+      while(chartSvg.firstChild) chartSvg.removeChild(chartSvg.firstChild);
+      if(!points.length) return;
+
+      document.getElementById('chartStartDate').textContent = fmtAxisDate(points[0].date);
+      document.getElementById('chartEndDate').textContent = fmtAxisDate(points[points.length - 1].date);
+
+      const hasBars = !!opts.barKey;
+      const lineTop = 6, lineBottom = hasBars ? 150 : 196;
+      const barTop = 162, barBottom = 196;
+
+      const t0 = points[0].date.getTime();
+      const t1 = points[points.length - 1].date.getTime();
+      const tSpan = Math.max(1, t1 - t0);
+
+      let vMin = Infinity, vMax = -Infinity;
+      lineDefs.forEach(def => {
+        points.forEach(p => {
+          const v = p[def.key];
+          if(v < vMin) vMin = v;
+          if(v > vMax) vMax = v;
+        });
+      });
+      if(vMin === vMax){ vMin *= 0.9; vMax = vMax * 1.1 || 1; }
+      const vPad = (vMax - vMin) * 0.08;
+      vMin -= vPad; vMax += vPad;
+
+      const xAt = (t) => PAD_L + ((t - t0) / tSpan) * (VW - PAD_L - PAD_R);
+      const yAt = (v) => lineTop + (1 - (v - vMin) / (vMax - vMin)) * (lineBottom - lineTop);
+      const maxBar = hasBars ? Math.max(1, ...points.map(p => p[opts.barKey])) : 1;
+      const yBarAt = (v) => barBottom - (v / maxBar) * (barBottom - barTop);
+
+      const startYear = points[0].date.getFullYear();
+      const endYear = points[points.length - 1].date.getFullYear();
+      const bottomEdge = hasBars ? barBottom : lineBottom;
+      for(let y = startYear; y <= endYear; y++){
+        const jan1 = new Date(y, 0, 1).getTime();
+        if(jan1 < t0 || jan1 > t1) continue;
+        const x = xAt(jan1);
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', x); line.setAttribute('x2', x);
+        line.setAttribute('y1', lineTop); line.setAttribute('y2', bottomEdge);
+        line.setAttribute('stroke', '#272b35'); line.setAttribute('stroke-width', '1');
+        chartSvg.appendChild(line);
+        const label = document.createElementNS(SVG_NS, 'text');
+        label.setAttribute('x', x); label.setAttribute('y', AXIS_Y);
+        label.setAttribute('fill', '#8b93a1'); label.setAttribute('font-size', '10');
+        label.setAttribute('font-family', 'JetBrains Mono, monospace');
+        label.setAttribute('text-anchor', 'middle');
+        label.textContent = String(y);
+        chartSvg.appendChild(label);
+      }
+
+      if(hasBars){
+        points.forEach(p => {
+          const v = p[opts.barKey];
+          if(v <= 0) return;
+          const x = xAt(p.date.getTime());
+          const y = yBarAt(v);
+          const line = document.createElementNS(SVG_NS, 'line');
+          line.setAttribute('x1', x); line.setAttribute('x2', x);
+          line.setAttribute('y1', barBottom); line.setAttribute('y2', y);
+          line.setAttribute('stroke', opts.barColor || '#ff5c5c'); line.setAttribute('stroke-width', '1.4');
+          line.setAttribute('opacity', '0.85');
+          chartSvg.appendChild(line);
+        });
+      }
+
+      lineDefs.forEach(def => {
+        const pathD = points.map((p, i) => {
+          const x = xAt(p.date.getTime());
+          const y = yAt(p[def.key]);
+          return (i === 0 ? 'M' : 'L') + x.toFixed(2) + ' ' + y.toFixed(2);
+        }).join(' ');
+        const path = document.createElementNS(SVG_NS, 'path');
+        path.setAttribute('d', pathD);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', def.color);
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('stroke-linejoin', 'round');
+        chartSvg.appendChild(path);
+
+        const last = points[points.length - 1];
+        const dot = document.createElementNS(SVG_NS, 'circle');
+        dot.setAttribute('cx', xAt(last.date.getTime())); dot.setAttribute('cy', yAt(last[def.key])); dot.setAttribute('r', '4');
+        dot.setAttribute('fill', def.color);
+        chartSvg.appendChild(dot);
+      });
+
+      document.getElementById('chartLegend').innerHTML = lineDefs.map(def =>
+        `<span><span class="dot" style="background:${def.color};"></span>${def.label}</span>`
+      ).join('') + (hasBars ? `<span><span class="dot" style="background:${opts.barColor};"></span>${opts.barLabel}</span>` : '');
+
+      const hoverLine = document.createElementNS(SVG_NS, 'line');
+      hoverLine.setAttribute('y1', lineTop); hoverLine.setAttribute('y2', bottomEdge);
+      hoverLine.setAttribute('stroke', '#8b93a1'); hoverLine.setAttribute('stroke-width', '1');
+      hoverLine.setAttribute('stroke-dasharray', '3,3'); hoverLine.setAttribute('opacity', '0');
+      chartSvg.appendChild(hoverLine);
+
+      const hoverDots = lineDefs.map(def => {
+        const d = document.createElementNS(SVG_NS, 'circle');
+        d.setAttribute('r', '4'); d.setAttribute('fill', '#fff');
+        d.setAttribute('stroke', def.color); d.setAttribute('stroke-width', '2');
+        d.setAttribute('opacity', '0');
+        chartSvg.appendChild(d);
+        return d;
+      });
+
+      const capture = document.createElementNS(SVG_NS, 'rect');
+      capture.setAttribute('x', 0); capture.setAttribute('y', 0);
+      capture.setAttribute('width', VW); capture.setAttribute('height', VH);
+      capture.setAttribute('fill', 'transparent');
+      chartSvg.appendChild(capture);
+
+      function nearestPoint(clientX){
+        const rect = chartSvg.getBoundingClientRect();
+        const relX = (clientX - rect.left) / rect.width * VW;
+        const targetT = t0 + ((relX - PAD_L) / (VW - PAD_L - PAD_R)) * tSpan;
+        let best = points[0], bestDiff = Infinity;
+        for(const p of points){
+          const diff = Math.abs(p.date.getTime() - targetT);
+          if(diff < bestDiff){ bestDiff = diff; best = p; }
+        }
+        return best;
+      }
+
+      function showTooltip(p){
+        const x = xAt(p.date.getTime());
+        hoverLine.setAttribute('x1', x); hoverLine.setAttribute('x2', x); hoverLine.setAttribute('opacity', '0.7');
+        lineDefs.forEach((def, i) => {
+          hoverDots[i].setAttribute('cx', x);
+          hoverDots[i].setAttribute('cy', yAt(p[def.key]));
+          hoverDots[i].setAttribute('opacity', '1');
+        });
+        chartTooltip.innerHTML = opts.tooltipBuilder ? opts.tooltipBuilder(p) : fmtTooltipDate(p.date);
+        const wrapRect = chartWrap.getBoundingClientRect();
+        const px = (x / VW) * wrapRect.width;
+        let left = px + 14;
+        if(left + 190 > wrapRect.width) left = px - 204;
+        chartTooltip.style.left = Math.max(4, left) + 'px';
+        chartTooltip.style.top = '6px';
+        chartTooltip.style.opacity = '1';
+      }
+      function hideTooltip(){
+        hoverLine.setAttribute('opacity', '0');
+        hoverDots.forEach(d => d.setAttribute('opacity', '0'));
+        chartTooltip.style.opacity = '0';
+      }
+
+      capture.addEventListener('mousemove', e => showTooltip(nearestPoint(e.clientX)));
+      capture.addEventListener('mouseleave', hideTooltip);
+      capture.addEventListener('touchmove', e => { if(e.touches && e.touches[0]) showTooltip(nearestPoint(e.touches[0].clientX)); }, { passive: true });
+      capture.addEventListener('touchend', hideTooltip);
+    }
+
+    /* ================= tabs ================= */
+    function switchTab(tabId){
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+      document.getElementById(tabId).classList.add('active-page');
+      document.getElementById('tabBtnIndex').classList.toggle('is-active', tabId === 'indexTab');
+      document.getElementById('tabBtnInventory').classList.toggle('is-active', tabId === 'inventoryTab');
+      document.getElementById('devBtn').classList.toggle('is-active', tabId === 'devTab');
+      if(tabId === 'devTab') renderDevConsole();
+      if(tabId === 'inventoryTab') loadInventory();
+    }
+
+    /* ================= developer mode ================= */
+    let devUnlocked = false;
+
+    function tryDevUnlock(){
+      const val = document.getElementById('devPasswordInput').value;
+      if(val === DEV_CODE){
+        devUnlocked = true;
+        document.getElementById('devLockedView').style.display = 'none';
+        document.getElementById('devConsoleView').style.display = 'grid';
+        document.getElementById('devBtn').classList.add('is-unlocked');
+        document.getElementById('devError').textContent = '';
+        renderDevConsole();
+      } else {
+        document.getElementById('devError').textContent = 'Incorrect code.';
+      }
+    }
+
+    function renderDevConsole(){
+      if(!devUnlocked) return;
+      ['devEditTier','devNewTier'].forEach(id => {
+        const sel = document.getElementById(id);
+        if(sel) sel.innerHTML = TIER_ORDER.map(t => `<option value="${t}">${TIER_META[t].label}</option>`).join('');
+      });
+      const sel = document.getElementById('devEditSelect');
+      if(sel){
+        const cur = sel.value;
+        sel.innerHTML = '<option value="">— select a blade —</option>' +
+          allSwords.slice().sort((a,b) => a.name.localeCompare(b.name))
+            .map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+        if(cur) sel.value = cur;
+      }
+    }
+
+    let devEditTrendState = 'stable';
+    function setDevTrendState(state){
+      devEditTrendState = state;
+      document.querySelectorAll('#devTrendState .toggle-btn').forEach(b => b.classList.toggle('selected', b.dataset.val === state));
+      document.getElementById('devTrendCustomFields').style.display = state === 'stable' ? 'none' : 'grid';
+    }
+
+    function applyDevEditImageUrl(){
+      const url = document.getElementById('devEditImageUrl').value.trim();
+      const preview = document.getElementById('devEditImagePreview');
+      preview.innerHTML = url ? `<img src="${url}" alt="preview" onerror="this.parentElement.innerHTML='❌ Could not load that URL'">` : 'No image';
+    }
+
+    function loadDevEditItem(name){
+      const item = allSwords.find(s => s.name === name);
+      if(!item) return;
+      const { percentHoarded } = deriveDisplayStats(item);
+      document.getElementById('devEditTier').value = item.tier;
+      document.getElementById('devEditValue').value = Math.round(item.value);
+      document.getElementById('devEditStock').value = item.stock;
+      document.getElementById('devEditDeleted').value = item.deletedCopies;
+      document.getElementById('devEditOwners').value = item.owners;
+      document.getElementById('devEditPremiumCopies').value = item.premiumCopies;
+      document.getElementById('devEditPremiumOwners').value = item.premiumOwners;
+      document.getElementById('devEditHoardPct').value = percentHoarded.toFixed(1);
+      document.getElementById('devEditValueItem').checked = !!item.valueItem;
+      document.getElementById('devEditImageUrl').value = item.image || '';
+      document.getElementById('devEditImagePreview').innerHTML = item.image ? `<img src="${item.image}" alt="preview">` : 'No image';
+      setDevTrendState(item.trend.state);
+      document.getElementById('devTrendTarget').value = item.trend.state === 'stable' ? '' : item.trend.target;
+      document.getElementById('devTrendDays').value = item.trend.state === 'stable' ? '' : Math.round(item.trend.etaHours / 24);
+    }
+
+    async function saveDevEditItem(){
+      const name = document.getElementById('devEditSelect').value;
+      const item = allSwords.find(s => s.name === name);
+      const statusEl = document.getElementById('devEditStatus');
+      if(!item){ statusEl.style.color = 'var(--down)'; statusEl.textContent = 'Pick a blade from the list first.'; return; }
+
+      const patch = {
+        tier: document.getElementById('devEditTier').value,
+        value: Number(document.getElementById('devEditValue').value) || item.value,
+        stock: Number(document.getElementById('devEditStock').value) || item.stock,
+        deletedCopies: Number(document.getElementById('devEditDeleted').value) || 0,
+        owners: Number(document.getElementById('devEditOwners').value) || item.owners,
+        premiumCopies: Number(document.getElementById('devEditPremiumCopies').value) || 0,
+        premiumOwners: Number(document.getElementById('devEditPremiumOwners').value) || 0,
+        valueItem: document.getElementById('devEditValueItem').checked,
+      };
+      const imageUrl = document.getElementById('devEditImageUrl').value.trim();
+      if(imageUrl) patch.image = imageUrl;
+
+      const hoardPct = Math.max(0, Math.min(95, Number(document.getElementById('devEditHoardPct').value) || 0));
+      const availableCopies = Math.max(1, patch.stock - patch.deletedCopies);
+      patch.hoardedCopies = Math.round(availableCopies * (hoardPct / 100));
+
+      const target = Number(document.getElementById('devTrendTarget').value) || undefined;
+      const days = Number(document.getElementById('devTrendDays').value) || undefined;
+      patch.trend = {
+        state: devEditTrendState,
+        target: target,
+        etaHours: days ? days * 24 : undefined,
+      };
+
+      try{
+        const data = await apiFetch('/api/market', {
+          method: 'POST',
+          headers: { 'x-dev-code': DEV_CODE },
+          body: JSON.stringify({ action: 'edit', name, patch })
+        });
+        const idx = allSwords.findIndex(s => s.name === name);
+        if(idx >= 0) allSwords[idx] = data.item;
+        renderStats(); renderGrid(); renderDevConsole();
+        statusEl.style.color = 'var(--up)';
+        statusEl.textContent = `Saved. ${name} is now ${formatCurrency(data.item.rap)} RAP.`;
+      }catch(e){
+        statusEl.style.color = 'var(--down)';
+        statusEl.textContent = 'Save failed: ' + e.message;
+      }
+    }
+
+    async function resetDevEditItem(){
+      const name = document.getElementById('devEditSelect').value;
+      const statusEl = document.getElementById('devEditStatus');
+      if(!name){ statusEl.style.color = 'var(--down)'; statusEl.textContent = 'Pick a blade first.'; return; }
+      try{
+        await apiFetch('/api/market', {
+          method: 'POST',
+          headers: { 'x-dev-code': DEV_CODE },
+          body: JSON.stringify({ action: 'reset', name })
+        });
+        await loadMarket();
+        renderDevConsole();
+        statusEl.style.color = 'var(--up)';
+        statusEl.textContent = `${name} reset — it will regenerate fresh next time it's viewed.`;
+      }catch(e){
+        statusEl.style.color = 'var(--down)';
+        statusEl.textContent = 'Reset failed: ' + e.message;
+      }
+    }
+
+    async function addDevNewItem(){
+      const statusEl = document.getElementById('devAddStatus');
+      const name = document.getElementById('devNewName').value.trim();
+      if(!name){ statusEl.style.color = 'var(--down)'; statusEl.textContent = 'Give the blade a name first.'; return; }
+      if(allSwords.some(s => s.name.toLowerCase() === name.toLowerCase())){
+        statusEl.style.color = 'var(--down)'; statusEl.textContent = 'A blade with that name already exists.'; return;
+      }
+      const body = {
+        action: 'add',
+        name,
+        image: document.getElementById('devNewImageUrl').value.trim(),
+        tier: document.getElementById('devNewTier').value,
+        valueItem: document.getElementById('devNewValueItem').checked,
+      };
+      const value = Number(document.getElementById('devNewValue').value);
+      const rap = Number(document.getElementById('devNewRap').value);
+      const stock = Number(document.getElementById('devNewStock').value);
+      if(value) body.value = value;
+      if(rap) body.rap = rap;
+      if(stock) body.stock = stock;
+
+      try{
+        const data = await apiFetch('/api/market', {
+          method: 'POST',
+          headers: { 'x-dev-code': DEV_CODE },
+          body: JSON.stringify(body)
+        });
+        allSwords.push(data.item);
+        renderStats(); renderGrid(); renderDevConsole();
+        document.getElementById('devNewName').value = '';
+        document.getElementById('devNewImageUrl').value = '';
+        document.getElementById('devNewImagePreview').innerHTML = 'No image';
+        document.getElementById('devNewValue').value = '';
+        document.getElementById('devNewRap').value = '';
+        document.getElementById('devNewStock').value = '';
+        document.getElementById('devNewValueItem').checked = false;
+        statusEl.style.color = 'var(--up)';
+        statusEl.textContent = `${name} added to the ledger.`;
+      }catch(e){
+        statusEl.style.color = 'var(--down)';
+        statusEl.textContent = 'Add failed: ' + e.message;
+      }
+    }
+
+    document.getElementById('devNewImageUrl').addEventListener('input', function(){
+      const url = this.value.trim();
+      const preview = document.getElementById('devNewImagePreview');
+      preview.innerHTML = url ? `<img src="${url}" alt="preview" onerror="this.parentElement.innerHTML='❌ Could not load that URL'">` : 'No image';
+    });
+
+    /* ================= inventory ================= */
+    let currentInventory = null;
+
+    async function loadInventory(){
+      const loading = document.getElementById('inventoryLoading');
+      const errEl = document.getElementById('inventoryError');
+      const content = document.getElementById('inventoryContent');
+      loading.style.display = 'flex';
+      errEl.style.display = 'none';
+      content.style.display = 'none';
+      try{
+        const data = await apiFetch('/api/inventory');
+        currentInventory = data;
+        renderInventory();
+        loading.style.display = 'none';
+        content.style.display = 'block';
+      }catch(e){
+        loading.style.display = 'none';
+        errEl.style.display = 'block';
+        errEl.textContent = 'Could not load your inventory: ' + e.message;
+      }
+    }
+
+    function renderInventory(){
+      if(!currentInventory) return;
+      document.getElementById('cashDisplay').textContent = formatCurrency(currentInventory.wallet);
+      document.getElementById('tokenDisplay').textContent = currentInventory.tokens.toLocaleString();
+      document.getElementById('crystalDisplay').textContent = currentInventory.crystals.toLocaleString();
+      document.getElementById('tokenLabelSlot').innerHTML = TOKEN_ICON_SVG + ' Token';
+      document.getElementById('crystalLabelSlot').innerHTML = CRYSTAL_ICON_SVG + ' Crystal';
+
+      const listEl = document.getElementById('ownedItemsList');
+      const names = Object.keys(currentInventory.items || {});
+      if(names.length === 0){
+        listEl.innerHTML = '<p class="empty-note">No blades owned yet.</p>';
+        return;
+      }
+      listEl.innerHTML = names.map(name => {
+        const qty = currentInventory.items[name];
+        const catalogItem = allSwords.find(s => s.name === name);
+        const image = catalogItem ? catalogItem.image : '';
+        const tierLabel = catalogItem ? TIER_META[catalogItem.tier].label : '';
+        return `
+          <div class="owned-item-row">
+            <div class="oi-img"><img src="${image || ''}" alt="${name}" onerror="this.style.display='none'"></div>
+            <div class="oi-info">
+              <div class="oi-name">${name}</div>
+              <div class="tier-chip" style="--chip-color:${catalogItem ? TIER_META[catalogItem.tier].color : 'var(--common)'}">${tierLabel}</div>
+            </div>
+            <div class="oi-qty">×${qty.toLocaleString()}</div>
+          </div>`;
+      }).join('');
+    }
+
+    async function setCurrency(currency){
+      const inputEl = document.getElementById(currency + 'SetInput');
+      const amount = Number(inputEl.value);
+      if(!inputEl.value){ return; }
+      try{
+        const data = await apiFetch('/api/inventory', {
+          method: 'POST',
+          body: JSON.stringify({ action: 'setBalance', currency, amount })
+        });
+        currentInventory = data;
+        renderInventory();
+        inputEl.value = '';
+      }catch(e){
+        alert('Could not update balance: ' + e.message);
+      }
+    }
+
+    async function adjustCurrency(currency, mode, inputIdOverride){
+      const inputId = inputIdOverride || (currency + 'AdjInput');
+      const inputEl = document.getElementById(inputId);
+      const amount = Number(inputEl.value);
+      if(!inputEl.value || !amount){ return; }
+      try{
+        const data = await apiFetch('/api/inventory', {
+          method: 'POST',
+          body: JSON.stringify({ action: 'adjustBalance', currency, amount, mode })
+        });
+        currentInventory = data;
+        renderInventory();
+        inputEl.value = '';
+      }catch(e){
+        alert('Could not update balance: ' + e.message);
+      }
+    }
+
+    /* ================= app init ================= */
+    async function enterApp(){
+      document.getElementById('authOverlay').style.display = 'none';
+      document.getElementById('appRoot').style.display = 'block';
+      document.getElementById('userChip').textContent = '@' + currentUsername;
+      await loadMarket();
+    }
+
+    async function init(){
+      document.getElementById('authPassword').addEventListener('keydown', e => { if(e.key === 'Enter') submitAuth(); });
+      document.getElementById('searchInput').addEventListener('input', renderGrid);
+      document.getElementById('sortSelect').addEventListener('change', renderGrid);
+      setDevTrendState('stable');
+
+      const resumed = await tryResumeSession();
+      if(resumed){
+        await enterApp();
+      } else {
+        document.getElementById('authOverlay').style.display = 'flex';
+      }
+    }
+
+    init();
+
+  </script>
+</body>
+</html>
