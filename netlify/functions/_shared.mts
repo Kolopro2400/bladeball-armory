@@ -286,12 +286,18 @@ function computeOwnership(name: string, tier: Tier, stock: number) {
 
 const MIN_DRIFT_INTERVAL_MS = 5 * 60 * 1000; // don't drift more than once per 5 min per item
 
-// Expected sales per day, tier-scaled — mystery/event items barely trade;
-// common items trade dozens of times a day.
+// Expected sales per day, tier-scaled. Common blades trade dozens of times a
+// day; mystery/event tier is genuinely illiquid — realistically 1 to 3+
+// *years* between sales, same as a real one-of-a-kind collectible.
 const SALE_RATE_PER_DAY: Record<Tier, [number, number]> = {
-  mystery: [0.015, 0.06], event: [0.03, 0.12], mythical: [0.15, 0.6],
-  legendary: [0.6, 2], epic: [2, 6], rare: [6, 18],
-  uncommon: [18, 50], common: [50, 140],
+  mystery: [0.0008, 0.0028],   // ~1 sale every 1-3.4 years
+  event: [0.0015, 0.006],       // ~1 sale every 5.5 months - 1.8 years
+  mythical: [0.02, 0.12],        // ~1 sale every 8-50 days
+  legendary: [0.15, 0.6],          // ~1 sale every 1.5-6.5 days
+  epic: [0.8, 3],                    // roughly daily
+  rare: [4, 12],                       // several times a day
+  uncommon: [15, 45],
+  common: [45, 130],
 };
 
 // Per-sale price swing as a fraction of the underlying trend-curve value —
@@ -330,6 +336,38 @@ function trendCurveValue(trend: MarketItem["trend"], hoursSinceLegStart: number)
   return Math.max(1, trend.legStartRap + span * progress);
 }
 
+function gaussianRandom(): number {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+/**
+ * Proper Poisson sample — critical for rare tiers: with tiny per-check
+ * expected values (e.g. a mystery item checked daily has ~0.002 expected
+ * sales that day), naive rounding always yields 0 and probability mass
+ * never accumulates, so the item could go LITERALLY forever without a
+ * sale even over real years of check-ins. A real Poisson sampler keeps the
+ * small per-check chance genuine, so it still correctly averages out to
+ * "about one sale every year or so" across many checks, matching reality.
+ */
+function poissonSample(lambda: number): number {
+  if (lambda <= 0) return 0;
+  if (lambda > 30) {
+    // Normal approximation for large lambda — avoids the slow/underflow-prone
+    // exact method, which would otherwise need hundreds of multiplications.
+    return Math.max(0, Math.round(lambda + Math.sqrt(lambda) * gaussianRandom()));
+  }
+  const L = Math.exp(-lambda);
+  let k = 0, p = 1;
+  do {
+    k++;
+    p *= Math.random();
+  } while (p > L);
+  return k - 1;
+}
+
 interface SimEvent { hoursIntoLeg: number; price: number; volume: number }
 
 /**
@@ -347,10 +385,7 @@ function simulateSales(
   const saleRate = pickInRange(SALE_RATE_PER_DAY[tier]);
   const vol = pickInRange(VOLATILITY_RANGE[tier]);
   const expected = (windowHours / 24) * saleRate;
-  // Randomized count around the expectation (roughly Poisson-flavored without
-  // needing a real Poisson sampler — good enough for a believable market).
-  let count = Math.round(expected * (0.4 + Math.random() * 1.3));
-  count = Math.max(0, Math.min(maxEvents, count));
+  const count = Math.max(0, Math.min(maxEvents, poissonSample(expected)));
 
   const hours: number[] = [];
   for (let i = 0; i < count; i++) hours.push(hoursFrom + Math.random() * windowHours);
